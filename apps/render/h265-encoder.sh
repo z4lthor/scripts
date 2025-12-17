@@ -126,9 +126,16 @@ OUTPUT=${ARGS[-1]}
 unset 'ARGS[-1]'
 INPUTS=("${ARGS[@]}")
 
+# Normalizing path names
+OUTPUT=$(realpath -m "$OUTPUT")
+
+for i in "${!INPUTS[@]}"; do
+  INPUTS[$i]=$(realpath -m "${INPUTS[$i]}")
+done
+
 for input in "${INPUTS[@]}"; do
     if [[ ! -f "$input" || "$input" == "$OUTPUT" ]]; then
-        error "Input file is invalid: $input"
+        error "Input file is invalid: $(basename "$input")"
         exit 1
     fi
 done
@@ -160,8 +167,15 @@ info "CRF: $CRF"
 info "Preset: $PRESET"
 info "Concat: $CONCAT"
 info "Audio bitrate: $ABITRATE"
-info "Inputs: ${INPUTS[*]}"
-info "Output: $OUTPUT"
+if [[ ${#INPUTS[@]} -eq 1 ]]; then
+    info "Input: ${INPUTS[*]}"
+else
+    info "Inputs:"
+    for k in "${!INPUTS[@]}"; do
+        info "\t[$((k + 1))]: $(basename "${INPUTS[$k]}")"
+    done
+fi
+info "Output: $(basename "$OUTPUT")"
 
 if ! confirm_action "Do you want to continue?"; then
     warn "Encoding aborted."
