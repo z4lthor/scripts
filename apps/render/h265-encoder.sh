@@ -8,9 +8,11 @@ BIN=/usr/bin/ffmpeg
 VCODEC="libx265"
 CRF=25
 PRESET="medium"
+CONCAT=false
 ACODEC="aac"
 ABITRATE="128k"
-HEVC_FOURCC="-tag:v hvc1"
+FOURCC="-tag:v hvc1" # Codec ID: hev1 | hvc1
+MP4FLAGS="-movflags +faststart"
 
 RED="\e[31m"
 GREEN="\e[32m"
@@ -20,17 +22,19 @@ RESET="\e[0m"
 help() {
 cat <<EOF
 Usage:
-$0 [options] <INPUT> <OUTPUT>
+$0 [OPTION]... INPUT OUTPUT
+$0 [OPTION]... -c INPUT... OUTPUT
 
 Options:
--c, --crf VALUE           Set CRF 0-51 (default: $CRF)
--p, --preset PRESET       Set preset (default: $PRESET)
---audio-bitrate RATE  Set audio bitrate (default: $ABITRATE)
--h, --help                Show this help
+-q, --quality VALUE     Set CRF 0-51 (default: $CRF)
+-p, --preset PRESET     Set preset (default: $PRESET)
+-c, --concat            Set concat demuxer
+--audio-bitrate RATE    Set audio bitrate (default: $ABITRATE)
+-h, --help              Show this help
 
 Examples:
-$0 input.mkv output.mp4
-$0 -c 23 --preset slow movie.mov out.mp4
+$0 -q 23 --preset slow input.mkv output.mp4
+$0 -q 21 -c VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB movie.mp4
 EOF
 }
 
@@ -46,13 +50,30 @@ warn() {
     echo -e "${YELLOW}[WARN]${RESET} $1"
 }
 
+confirm_action() {
+    while true; do
+        read -r -p "$1 [y/n]: " RESP
+        case "$RESP" in
+            y|Y)
+                return 0
+                ;;
+            n|N)
+                return 1
+                ;;
+            *)
+                error "Invalid response. Try again."
+                ;;
+        esac
+    done
+}
+
 if ! command -v $BIN > /dev/null 2>&1; then
     error "$BIN not found"
     exit 1
 fi
 
-OPTS=$(getopt -o c:p:h \
-    --long crf:,preset:,audio-bitrate:,help \
+OPTS=$(getopt -o q:p:ch \
+    --long quality:,preset:,concat,audio-bitrate:,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -64,13 +85,17 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
-        -c|--crf)
+        -q|--quality)
             CRF="$2"
             shift 2
             ;;
         -p|--preset)
             PRESET="$2"
             shift 2
+            ;;
+        -c|--concat)
+            CONCAT=true
+            shift
             ;;
         --audio-bitrate)
             ABITRATE="$2"
@@ -91,19 +116,22 @@ while true; do
     esac
 done
 
-if [[ $# -ne 2 ]]; then
-    error "Mandatory INPUT and OUTPUT"
+if [[ $# -lt 2 || ("$CONCAT" = "false" && $# -gt 2) ]]; then
     help
     exit 1
 fi
 
-INPUT="$1"
-OUTPUT="$2"
+ARGS=("$@")
+OUTPUT=${ARGS[-1]}
+unset 'ARGS[-1]'
+INPUTS=("${ARGS[@]}")
 
-if [[ ! -f "$INPUT" ]]; then
-    error "Input file not found: $INPUT"
-    exit 1
-fi
+for input in "${INPUTS[@]}"; do
+    if [[ ! -f "$input" || "$input" == "$OUTPUT" ]]; then
+        error "Input file is invalid: $input"
+        exit 1
+    fi
+done
 
 if [[ ! "$CRF" =~ ^[0-9]+$ ]]; then
     error "CRF must be a number."
@@ -115,17 +143,36 @@ if (( CRF < 0 || CRF > 51 )); then
     exit 1
 fi
 
+FILELIST=$(mktemp /tmp/filelist.XXXXXX)
+INPUTOPTS=(-i "${INPUTS[0]}")
+
+if $CONCAT; then
+    for input in "${INPUTS[@]}"; do
+        printf "file '%s'\n" "$input" >> "$FILELIST"
+    done
+    INPUTOPTS=(-f concat -safe 0 -i $FILELIST)
+fi
+
+trap 'rm -f "$FILELIST"' EXIT INT TERM
+
 info "Starting H.265 encode…"
 info "CRF: $CRF"
 info "Preset: $PRESET"
+info "Concat: $CONCAT"
 info "Audio bitrate: $ABITRATE"
-info "Input: $INPUT"
+info "Inputs: ${INPUTS[*]}"
 info "Output: $OUTPUT"
 
-$BIN -i "$INPUT" \
+if ! confirm_action "Do you want to continue?"; then
+    warn "Encoding aborted."
+    exit 0
+fi
+
+$BIN "${INPUTOPTS[@]}" \
     -c:v $VCODEC -crf $CRF -preset $PRESET \
     -c:a $ACODEC -b:a $ABITRATE \
-    $HEVC_FOURCC \
+    $FOURCC \
+    $MP4FLAGS \
     "$OUTPUT"
 
 if [[ $? -eq 0 ]]; then
@@ -136,4 +183,3 @@ else
 fi
 
 exit 0
-
