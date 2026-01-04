@@ -8,6 +8,7 @@ BIN=/usr/bin/ffmpeg
 VCODEC="libx265"
 CRF=25
 PRESET="medium"
+FILTER_SCALE=""
 CONCAT=false
 ACODEC="aac"
 ABITRATE="128k"
@@ -28,12 +29,14 @@ $0 [OPTION]... -c INPUT... OUTPUT
 Options:
 -q, --quality VALUE     Set CRF 0-51 (default: $CRF)
 -p, --preset PRESET     Set preset (default: $PRESET)
+-s, --size WIDTH:HEIGHT Set resolution (default: keep original size)
 -c, --concat            Set concat demuxer
 --audio-bitrate RATE    Set audio bitrate (default: $ABITRATE)
 -h, --help              Show this help
 
 Examples:
 $0 -q 23 --preset slow input.mkv output.mp4
+$0 -q 22 -s -1:1080 input.mp4 output.mp4
 $0 -q 21 -c VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB movie.mp4
 EOF
 }
@@ -67,13 +70,40 @@ confirm_action() {
     done
 }
 
+is_number() {
+    local num=$1
+    [[ "$num" =~ ^[0-9]+$ ]]
+}
+
+is_divisible_by_8() {
+    local num=$1
+    (( num % 8 == 0 ))
+}
+
+check_size() {
+    local size=$1
+    
+    IFS=':' read -r WIDTH HEIGHT <<< "$size"
+    
+    [[ -z "$WIDTH" ]] || [[ -z "$HEIGHT" ]] && return 1
+    
+    if [[ "$WIDTH" == "-1" ]]; then
+        is_number "$HEIGHT" && is_divisible_by_8 "$HEIGHT"
+    elif [[ "$HEIGHT" == "-1" ]]; then
+        is_number "$WIDTH" && is_divisible_by_8 "$WIDTH"
+    else
+        is_number "$WIDTH" && is_divisible_by_8 "$WIDTH" && \
+        is_number "$HEIGHT" && is_divisible_by_8 "$HEIGHT"
+    fi
+}
+
 if ! command -v $BIN > /dev/null 2>&1; then
     error "$BIN not found"
     exit 1
 fi
 
-OPTS=$(getopt -o q:p:ch \
-    --long quality:,preset:,concat,audio-bitrate:,help \
+OPTS=$(getopt -o q:p:s:ch \
+    --long quality:,preset:,size:,concat,audio-bitrate:,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -91,6 +121,10 @@ while true; do
             ;;
         -p|--preset)
             PRESET="$2"
+            shift 2
+            ;;
+        -s|--size)
+            SIZE="$2"
             shift 2
             ;;
         -c|--concat)
@@ -150,6 +184,14 @@ if (( CRF < 0 || CRF > 51 )); then
     exit 1
 fi
 
+if [[ -n "$SIZE" ]]; then
+    if ! check_size "$SIZE"; then
+        error "Error: Wrong format. Use -s WIDTH:HEIGHT (e.g., -s 1920:1080)"
+        exit 1
+    fi
+    FILTER_SCALE="-vf scale=$SIZE"
+fi
+
 FILELIST=$(mktemp /tmp/filelist.XXXXXX)
 INPUTOPTS=(-i "${INPUTS[0]}")
 
@@ -165,6 +207,7 @@ trap 'rm -f "$FILELIST"' EXIT INT TERM
 info "Starting H.265 encode…"
 info "CRF: $CRF"
 info "Preset: $PRESET"
+[[ -n "$SIZE" ]] && info "Size: $SIZE"
 info "Concat: $CONCAT"
 info "Audio bitrate: $ABITRATE"
 if [[ ${#INPUTS[@]} -eq 1 ]]; then
@@ -178,7 +221,6 @@ fi
 info "Output: $(basename "$OUTPUT")"
 
 # Check integrity
-
 echo -n "Checking integrity ... "
 if ./check-video-integrity.sh "${INPUTS[@]}"> /dev/null 2>&1; then
     echo "OK"
@@ -195,6 +237,7 @@ fi
 
 $BIN "${INPUTOPTS[@]}" \
     -c:v $VCODEC -crf $CRF -preset $PRESET \
+    $FILTER_SCALE \
     -c:a $ACODEC -b:a $ABITRATE \
     $FOURCC \
     $MP4FLAGS \
