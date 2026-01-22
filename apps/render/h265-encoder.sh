@@ -8,7 +8,10 @@ BIN=/usr/bin/ffmpeg
 VCODEC="libx265"
 CRF=25
 PRESET="medium"
-FILTER_SCALE=""
+# Deinterlace only if needed using the BWDIF algorithm (superior to YADIF), 
+# maintaining original frame rate (mode=0) and ensuring universal YUV420p 
+# compatibility for the output.
+VIDEO_FILTER_OPTS=(-vf "bwdif=filter=complex:mode=0:parity=auto:deint=1,format=yuv420p")
 CONCAT=false
 ACODEC="aac"
 ABITRATE="128k"
@@ -189,17 +192,18 @@ if [[ -n "$SIZE" ]]; then
         error "Error: Wrong format. Use -s WIDTH:HEIGHT (e.g., -s 1920:1080)"
         exit 1
     fi
-    FILTER_SCALE="-vf scale=$SIZE"
+    # Append scaling to the existing filter chain using Lanczos for high-quality resampling
+    VIDEO_FILTER_OPTS[1]="${VIDEO_FILTER_OPTS[1]},scale=$SIZE:flags=lanczos"
 fi
 
 FILELIST=$(mktemp /tmp/filelist.XXXXXX)
-INPUTOPTS=(-i "${INPUTS[0]}")
+INPUT_OPTS=(-i "${INPUTS[0]}")
 
 if $CONCAT; then
     for input in "${INPUTS[@]}"; do
         printf "file '%s'\n" "$input" >> "$FILELIST"
     done
-    INPUTOPTS=(-f concat -safe 0 -i $FILELIST)
+    INPUT_OPTS=(-f concat -safe 0 -i $FILELIST)
 fi
 
 trap 'rm -f "$FILELIST"' EXIT INT TERM
@@ -235,9 +239,9 @@ if ! confirm_action "Do you want to continue?"; then
     exit 0
 fi
 
-$BIN "${INPUTOPTS[@]}" \
+$BIN "${INPUT_OPTS[@]}" \
     -c:v $VCODEC -crf $CRF -preset $PRESET \
-    $FILTER_SCALE \
+    "${VIDEO_FILTER_OPTS[@]}" \
     -c:a $ACODEC -b:a $ABITRATE \
     $FOURCC \
     $MP4FLAGS \
