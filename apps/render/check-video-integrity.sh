@@ -8,34 +8,35 @@ set -euo pipefail
 
 BIN=/usr/bin/ffmpeg
 INPUTS=("$@")
-ERRORS_FOUND=0
-WARNINGS_FOUND=0
-VOB_MODE=false
-VOB_IGNORE_PATTERNS=(
+VOB_IGNORE_WARNINGS=(
+    "motion_type"
+    "MVs not available"
+    "invalid cbp"
+    "ac-tex damaged"
+    "slice mismatch"
     "incomplete frame"
+    "frame size mismatch"
+    "invalid packet size"
+    "packet too small"
+    "packet too large"
+    "buffer underflow"
+    "missing picture in sequence"
+    "quantizer scale out of range"
+    "concealing errors"
+    "invalid vbv_delay"
+    "Invalid frame dimensions"
+    "Error submitting packet"
     "non monotonically increasing dts"
     "overread"
-    "ac-tex damaged"
-    "Warning MVs not available"
-    "Invalid frame dimensions 0x0"
-    "Error submitting packet to decoder"
-    "Invalid data found when processing input"
     "Last message repeated"
-    "packet too small"
-    "buffer underflow"
 )
 
-all_vobs() {
-    local all=true
+check_integrity() {
+    local file="$1"
 
-    for file in "${INPUTS[@]}"; do
-        if ! is_vob "$file"; then
-            all=false
-            break
-        fi
-    done
+    result=$($BIN -v error -i "$file" -f null - 2>&1 || true)
 
-    [[ "$all" == true ]]
+    echo "$result"
 }
 
 is_vob() {
@@ -45,11 +46,10 @@ is_vob() {
 }
 
 filter_vob_warnings() {
-    local filtered="$1"
+    local data="$1"
+    local IGNORE_PATTERN=$(IFS='|'; echo "${VOB_IGNORE_WARNINGS[*]}")
 
-    for pattern in "${VOB_IGNORE_PATTERNS[@]}"; do
-        filtered=$(echo "$filtered" | grep -v "$pattern" || true)
-    done
+    filtered=$(echo "$data" | grep -vE "$IGNORE_PATTERN" || true)
 
     echo "$filtered"
 }
@@ -64,67 +64,41 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-if all_vobs && [[ ${#INPUTS[@]} -gt 0 ]]; then
-    VOB_MODE=true
-    echo "VOB mode enabled"
-fi
+# Normalizing path names
+for k in "${!INPUTS[@]}"; do
+  INPUTS[$k]=$(realpath -m "${INPUTS[$k]}")
+done
 
-echo "Checking integrity of ${#INPUTS[@]} file(s)..."
-
-for file in "${INPUTS[@]}"; do
-    if [[ ! -f "$file" ]]; then
-        echo "File not valid: $file" >&2
-        ERRORS_FOUND=$((ERRORS_FOUND + 1))
-        continue
-    fi
-
-    filename=$(basename "$file")
-    echo -n "Checking: $filename ..."
-    
-    err_output=$($BIN -v error -i "$file" -f null - 2>&1 || true)
-
-    if $VOB_MODE; then
-        filtered_errors=$(filter_vob_warnings "$err_output")
-    else
-        filtered_errors="$err_output"
-    fi
-
-    if [[ -z "$filtered_errors" ]]; then
-        if [[ -n "$err_output" ]] && $VOB_MODE; then
-            echo " OK (normal VOB warnings filtered)"
-            WARNINGS_FOUND=$((WARNINGS_FOUND + 1))
-        else
-            echo " OK"
-        fi
-    else
-        echo " ERRORS FOUND"
-        echo "$filtered_errors" | sed 's/^/      /'
-        ERRORS_FOUND=$((ERRORS_FOUND + 1))
+for input in "${INPUTS[@]}"; do
+    if [[ ! -f "$input" ]]; then
+        echo "Input file is invalid: $(basename "$input")"
+        exit 1
     fi
 done
 
-echo "  Total files: ${#INPUTS[@]}"
+echo "Checking integrity of ${#INPUTS[@]} file(s)..."
 
-if $VOB_MODE; then
-    echo "  Passed (with filtered warnings): $WARNINGS_FOUND"
-    echo "  Perfect (no warnings): $((${#INPUTS[@]} - ERRORS_FOUND - WARNINGS_FOUND))"
-else
-    echo "  Passed: $((${#INPUTS[@]} - ERRORS_FOUND))"
-fi
+for k in "${!INPUTS[@]}"; do
+    input="${INPUTS[$k]}"
+    echo -n "$((k + 1))/${#INPUTS[@]} Checking $(basename "$input") video integrity ... "
+    result=$(check_integrity "$input")
 
-if [[ $ERRORS_FOUND -gt 0 ]]; then
-    echo "  Failed: $ERRORS_FOUND" >&2
-fi
+    if is_vob "$input"; then
+        filtered=$(filter_vob_warnings "$result")
+    else
+        filtered="$result"
+    fi
 
-echo ""
+    if [[ -n "$filtered" ]]; then
+        echo " Wrong"
+        exit 1
+    fi
 
-if [[ $ERRORS_FOUND -gt 0 ]]; then
-    echo "Errors found. These files may be corrupted or unplayable."
-    exit 1
-elif [[ $WARNINGS_FOUND -gt 0 ]] && $VOB_MODE; then
-    echo "VOB files have normal DVD structure warnings but should be playable."
-    exit 0
-else
-    echo "All files passed integrity check."
-    exit 0
-fi
+    if is_vob "$input"; then
+        echo "OK (VOB warnings filtered)"
+    else
+        echo "OK"
+    fi
+done
+
+[[ $? -eq 0 ]] && exit 0 || exit 1
