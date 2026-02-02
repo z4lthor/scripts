@@ -17,6 +17,7 @@ ACODEC="aac"
 ABITRATE="128k"
 FOURCC="-tag:v hvc1" # Codec ID: hev1 | hvc1
 MP4FLAGS="-movflags +faststart"
+VOB_MODE=false
 
 RED="\e[31m"
 GREEN="\e[32m"
@@ -56,6 +57,36 @@ warn() {
     echo -e "${YELLOW}[WARN]${RESET} $1"
 }
 
+is_vob() {
+    local file="$1"
+    [[ "${file,,}" == *.vob ]]
+}
+
+all_vobs() {
+    local inputs=("$@")
+
+    for input in "${inputs[@]}"; do
+        if ! is_vob "$input"; then
+            return 1;
+        fi
+    done
+
+    return 0;
+}
+
+create_temporary_filelist() {
+    local inputs=("$@")
+    local filelist=$(mktemp /tmp/filelist.XXXXXX)
+
+    for input in "${inputs[@]}"; do
+        printf "file '%s'\n" "$input" >> "$filelist"
+    done
+
+    trap 'rm -f "$filelist"' EXIT INT TERM
+
+    echo "$filelist"
+}
+
 confirm_action() {
     while true; do
         read -r -p "$1 [y/n]: " RESP
@@ -83,7 +114,7 @@ is_divisible_by_8() {
     (( num % 8 == 0 ))
 }
 
-check_size() {
+is_resolution_format() {
     local size=$1
     
     IFS=':' read -r WIDTH HEIGHT <<< "$size"
@@ -175,7 +206,15 @@ for input in "${INPUTS[@]}"; do
         error "Input file is invalid: $(basename "$input")"
         exit 1
     fi
+    if is_vob "$input"; then
+        VOB_MODE=true
+    fi
 done
+
+if $VOB_MODE && ! all_vobs "${INPUTS[@]}"; then
+    error "VOB mode is on. All the input files must be VOBs"
+    exit 1
+fi
 
 if [[ ! "$CRF" =~ ^[0-9]+$ ]]; then
     error "CRF must be a number."
@@ -188,7 +227,7 @@ if (( CRF < 0 || CRF > 51 )); then
 fi
 
 if [[ -n "$SIZE" ]]; then
-    if ! check_size "$SIZE"; then
+    if ! is_resolution_format "$SIZE"; then
         error "Error: Wrong format. Use -s WIDTH:HEIGHT (e.g., -s 1920:1080)"
         exit 1
     fi
@@ -196,23 +235,23 @@ if [[ -n "$SIZE" ]]; then
     VIDEO_FILTER_OPTS[1]="${VIDEO_FILTER_OPTS[1]},scale=$SIZE:flags=lanczos"
 fi
 
-FILELIST=$(mktemp /tmp/filelist.XXXXXX)
 INPUT_OPTS=(-i "${INPUTS[0]}")
 
 if $CONCAT; then
-    for input in "${INPUTS[@]}"; do
-        printf "file '%s'\n" "$input" >> "$FILELIST"
-    done
-    INPUT_OPTS=(-f concat -safe 0 -i $FILELIST)
+    # Use concat protocol for VOB files and the concat demuxer for everything else.
+    if $VOB_MODE; then
+        INPUT_OPTS=(-i "concat:$(IFS="|"; echo "${INPUTS[*]}")")
+    else
+        INPUT_OPTS=(-f concat -safe 0 -i "$(create_temporary_filelist "${INPUTS[@]}")")
+    fi
 fi
-
-trap 'rm -f "$FILELIST"' EXIT INT TERM
 
 info "Starting H.265 encode…"
 info "CRF: $CRF"
 info "Preset: $PRESET"
 [[ -n "$SIZE" ]] && info "Size: $SIZE"
 info "Concat: $CONCAT"
+info "VOB mode: $VOB_MODE"
 info "Audio bitrate: $ABITRATE"
 if [[ ${#INPUTS[@]} -eq 1 ]]; then
     info "Input: ${INPUTS[*]}"
