@@ -11,7 +11,7 @@ PRESET="medium"
 # Deinterlace only if needed using the BWDIF algorithm (superior to YADIF), 
 # maintaining original frame rate (mode=0) and ensuring universal YUV420p 
 # compatibility for the output.
-VIDEO_FILTER_OPTS=(-vf "bwdif=filter=complex:mode=0:parity=auto:deint=1,format=yuv420p")
+VIDEO_FILTER_OPTS=(-vf "bwdif=mode=0:parity=auto:deint=1,format=yuv420p")
 CONCAT=false
 ACODEC="aac"
 ABITRATE="128k"
