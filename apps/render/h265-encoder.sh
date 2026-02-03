@@ -273,6 +273,18 @@ else
     exit 1
 fi
 
+# Check compatibility
+if $CONCAT; then
+    echo -n "Checking compatibility ... "
+    if ./check-video-compatibility.sh "${INPUTS[@]}"> /dev/null 2>&1; then
+        echo "OK"
+    else
+        echo "Fail"
+        error "Encoding failed."
+        exit 1
+    fi
+fi
+
 if ! confirm_action "Do you want to continue?"; then
     warn "Encoding aborted."
     exit 0
