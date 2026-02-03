@@ -6,7 +6,8 @@
 
 set -euo pipefail
 
-BIN=/usr/bin/ffmpeg
+FFPROBE_BIN=/usr/bin/ffprobe
+FFMPEG_BIN=/usr/bin/ffmpeg
 INPUTS=("$@")
 VOB_IGNORE_WARNINGS=(
     "motion_type"
@@ -31,10 +32,38 @@ VOB_IGNORE_WARNINGS=(
     "Last message repeated"
 )
 
+check_file() {
+    local file="$1"
+
+    if ! [[ -f "$file" && -r "$file" && -s "$file" ]]; then
+        echo "Error: Input file is invalid: $(basename "$file")"
+        return 1
+    fi
+
+    if ! FFPROBE_BIN -v error "$file" >/dev/null 2>&1; then
+        echo "Error: Cannot read format: $(basename "$file")"
+        return 1
+    fi
+
+    local duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
+    if [[ -z "$duration" || "$duration" = "N/A" ]] || ! is_positive "$duration"; then
+        echo "Error: Invalid duration: $(basename "$file")"
+        return 1
+    fi
+
+    local streams=$(ffprobe -v error -select_streams v -show_entries stream=index -of csv=p=0 "$file" | wc -l)
+    if [[ "$streams" -eq 0 ]]; then
+        echo "Error: No video streams: $(basename "$file")"
+        return 1
+    fi
+
+    return 0
+}
+
 check_integrity() {
     local file="$1"
 
-    result=$($BIN -v error -i "$file" -f null - 2>&1 || true)
+    result=$($FFMPEG_BIN -v error -i "$file" -f null - 2>&1 || true)
 
     echo "$result"
 }
@@ -43,6 +72,22 @@ is_vob() {
     local file="$1"
 
     [[ "${file,,}" == *.vob ]]
+}
+
+is_number() {
+    local num="$1"
+
+    [[ -z "$num" || ! "$num" =~ ^-?[0-9]*\.?[0-9]+$ ]]
+}
+
+is_positive() {
+    local num="$1"
+
+    if ! is_number "$num"; then
+        return 1
+    fi
+
+    echo "$num > 0" | bc 2>/dev/null | grep -q 1
 }
 
 filter_vob_warnings() {
@@ -54,8 +99,13 @@ filter_vob_warnings() {
     echo "$filtered"
 }
 
-if ! command -v $BIN > /dev/null 2>&1; then
-    echo "$BIN not found" >&2
+if ! command -v $FFPROBE_BIN > /dev/null 2>&1; then
+    echo "$FFPROBE_BIN not found" >&2
+    exit 1
+fi
+
+if ! command -v $FFMPEG_BIN > /dev/null 2>&1; then
+    echo "$FFMPEG_BIN not found" >&2
     exit 1
 fi
 
@@ -101,4 +151,4 @@ for k in "${!INPUTS[@]}"; do
     fi
 done
 
-[[ $? -eq 0 ]] && exit 0 || exit 1
+exit 0
