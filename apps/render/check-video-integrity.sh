@@ -32,28 +32,42 @@ VOB_IGNORE_WARNINGS=(
     "Last message repeated"
 )
 
+normalize_path_names() {
+    local -n inputs=$1
+
+    [[ ${#inputs[@]} -eq 0 ]] && return 0
+
+    for k in "${!inputs[@]}"; do
+        if [[ -n "${inputs[$k]}" ]]; then
+            inputs[$k]=$(realpath -m -- "${inputs[$k]}")
+        fi
+    done
+}
+
 check_file() {
     local file="$1"
 
     if ! [[ -f "$file" && -r "$file" && -s "$file" ]]; then
-        echo "Error: Input file is invalid: $(basename "$file")"
+        echo "Error: Input file is invalid: $(basename "$file")" >&2
         return 1
     fi
 
-    if ! FFPROBE_BIN -v error "$file" >/dev/null 2>&1; then
-        echo "Error: Cannot read format: $(basename "$file")"
+    if ! $FFPROBE_BIN -v error "$file" >/dev/null 2>&1; then
+        echo "Error: Cannot read format: $(basename "$file")" >&2
         return 1
     fi
 
-    local duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
+    local duration=$($FFPROBE_BIN -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
+
     if [[ -z "$duration" || "$duration" = "N/A" ]] || ! is_positive "$duration"; then
-        echo "Error: Invalid duration: $(basename "$file")"
+        echo "Error: Invalid duration: $(basename "$file")" >&2
         return 1
     fi
 
-    local streams=$(ffprobe -v error -select_streams v -show_entries stream=index -of csv=p=0 "$file" | wc -l)
+    local streams=$($FFPROBE_BIN -v error -select_streams v -show_entries stream=index -of csv=p=0 "$file" | wc -l)
+
     if [[ "$streams" -eq 0 ]]; then
-        echo "Error: No video streams: $(basename "$file")"
+        echo "Error: No video streams: $(basename "$file")" >&2
         return 1
     fi
 
@@ -77,7 +91,7 @@ is_vob() {
 is_number() {
     local num="$1"
 
-    [[ -z "$num" || ! "$num" =~ ^-?[0-9]*\.?[0-9]+$ ]]
+    [[ -z "$num" || "$num" =~ ^-?[0-9]*\.?[0-9]+$ ]]
 }
 
 is_positive() {
@@ -114,16 +128,10 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-# Normalizing path names
-for k in "${!INPUTS[@]}"; do
-  INPUTS[$k]=$(realpath -m "${INPUTS[$k]}")
-done
+normalize_path_names INPUTS
 
 for input in "${INPUTS[@]}"; do
-    if [[ ! -f "$input" ]]; then
-        echo "Input file is invalid: $(basename "$input")"
-        exit 1
-    fi
+    ! check_file "$input" && exit 1
 done
 
 echo "Checking integrity of ${#INPUTS[@]} file(s)..."
