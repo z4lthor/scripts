@@ -36,6 +36,7 @@ Options:
 -s, --size WIDTH:HEIGHT Set resolution (default: keep original size)
 -c, --concat            Set concat demuxer
 --audio-bitrate RATE    Set audio bitrate (default: $ABITRATE)
+-y, --yes               Skip all prompts
 -h, --help              Show this help
 
 Examples:
@@ -88,6 +89,8 @@ create_temporary_filelist() {
 }
 
 confirm_action() {
+    [[ -n "$SKIP_PROMPTS" && "$SKIP_PROMPTS" = "true" ]] && return 0;
+
     while true; do
         read -r -p "$1 [y/n]: " RESP
         case "$RESP" in
@@ -136,8 +139,8 @@ if ! command -v $BIN > /dev/null 2>&1; then
     exit 1
 fi
 
-OPTS=$(getopt -o q:p:s:ch \
-    --long quality:,preset:,size:,concat,audio-bitrate:,help \
+OPTS=$(getopt -o q:p:s:cyh \
+    --long quality:,preset:,size:,concat,audio-bitrate:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -168,6 +171,10 @@ while true; do
         --audio-bitrate)
             ABITRATE="$2"
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_PROMPTS=true
+            shift
             ;;
         -h|--help)
             help
