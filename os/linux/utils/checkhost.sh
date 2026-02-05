@@ -10,70 +10,30 @@ BLUE="\e[34m"
 CYAN="\e[96m"
 RESET="\e[0m"
 
-help() {
-cat <<EOF
-Usage:
-$0 [options] <HOST>
+print_msg() {
+    local msg="$1"
+    local status="$2"
 
-Options:
--h, --help                Show this help
-EOF
-}
-
-error() {
-    echo -e "${RED}[ERROR]${RESET} $1" >&2
-}
-
-info() {
-    if [[ "$2" == "ONLINE" ]]; then
-        RES="${GREEN}$2${RESET}"
+    if [[ "$status" == "ONLINE" ]]; then
+        RES="${GREEN}$status${RESET}"
     else
-        RES="${RED}$2${RESET}"
+        RES="${RED}$status${RESET}"
     fi
 
-    echo -e "${CYAN}[INFO]${RESET} Host ${BLUE}$1${RESET} is $RES"
+    echo -e "Host ${BLUE}$msg${RESET} is $RES"
 }
-
-OPTS=$(getopt -o c:p:h \
-    --long crf:,preset:,audio-bitrate:,help \
-    -n "$0" -- "$@")
-
-if [[ $? -ne 0 ]]; then
-    help
-    exit 1
-fi
-
-eval set -- "$OPTS"
-
-while true; do
-    case "$1" in
-        -h|--help)
-            help
-            exit 0
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            error "Internal getopt error"
-            exit 1
-            ;;
-    esac
-done
 
 HOST="$1"
 
 if [[ $# -ne 1 ]]; then
-    error "Mandatory HOST"
-    help
+    echo "Usage: $0 HOST"
     exit 1
 fi
 
 if ping -c1 -W1 "$HOST" > /dev/null 2>&1; then
-    info $HOST "ONLINE"
+    print_msg $HOST "ONLINE"
 else
-    info $HOST "DOWN"
+    print_msg $HOST "DOWN"
     exit 1
 fi
 
