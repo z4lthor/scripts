@@ -264,13 +264,15 @@ fi
 info "Output: $(basename "$OUTPUT")"
 
 # Check integrity
-echo -n "Checking integrity ... "
-if ./check-video-integrity.sh "${INPUTS[@]}"> /dev/null 2>&1; then
-    echo "OK"
-else
-    echo "Fail"
-    error "Encoding failed."
-    exit 1
+if confirm_action "Do you want to check integrity?"; then
+    echo -n "Checking integrity ... "
+    if ./check-video-integrity.sh "${INPUTS[@]}"> /dev/null 2>&1; then
+        echo "OK"
+    else
+        echo "Fail"
+        error "Encoding failed."
+        exit 1
+    fi
 fi
 
 # Check compatibility
