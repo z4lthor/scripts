@@ -15,6 +15,8 @@ VIDEO_FILTER_OPTS=(-vf "bwdif=mode=0:parity=auto:deint=1,format=yuv420p")
 CONCAT=false
 ACODEC="aac"
 ABITRATE="128k"
+AFREQ="48000"
+ACHANNELS="2"
 FOURCC="-tag:v hvc1" # Codec ID: hev1 | hvc1
 MP4FLAGS="-movflags +faststart"
 VOB_MODE=false
@@ -31,13 +33,15 @@ $0 [OPTION]... INPUT OUTPUT
 $0 [OPTION]... -c INPUT... OUTPUT
 
 Options:
--q, --quality VALUE     Set CRF 0-51 (default: $CRF)
--p, --preset PRESET     Set preset (default: $PRESET)
--s, --size WIDTH:HEIGHT Set resolution (default: keep original size)
--c, --concat            Set concat demuxer
---audio-bitrate RATE    Set audio bitrate (default: $ABITRATE)
--y, --yes               Skip all prompts
--h, --help              Show this help
+-q, --quality VALUE       Set CRF 0-51 (default: $CRF)
+-p, --preset PRESET       Set preset (default: $PRESET)
+-s, --size WIDTH:HEIGHT   Set resolution (default: keep original size)
+-c, --concat              Set concat demuxer
+--audio-bitrate RATE      Set audio bitrate (default: $ABITRATE)
+--audio-freq FREQUENCY    Set audio sampling frequency (default: $AFREQ)
+--audio-channels CHANNELS Set number of audio channels (default: $ACHANNELS)
+-y, --yes                 Skip all prompts
+-h, --help                Show this help
 
 Examples:
 $0 -q 23 --preset slow input.mkv output.mp4
@@ -140,7 +144,7 @@ if ! command -v $BIN > /dev/null 2>&1; then
 fi
 
 OPTS=$(getopt -o q:p:s:cyh \
-    --long quality:,preset:,size:,concat,audio-bitrate:,yes,help \
+    --long quality:,preset:,size:,concat,audio-bitrate:,audio-freq:,audio-channels:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -170,6 +174,14 @@ while true; do
             ;;
         --audio-bitrate)
             ABITRATE="$2"
+            shift 2
+            ;;
+        --audio-freq)
+            AFREQ="$2"
+            shift 2
+            ;;
+        --audio-channels)
+            ACHANNELS="$2"
             shift 2
             ;;
         -y|--yes)
@@ -217,6 +229,8 @@ for input in "${INPUTS[@]}"; do
         VOB_MODE=true
     fi
 done
+
+echo "Inputs: ${INPUTS[@]}"
 
 if $VOB_MODE && ! all_vobs "${INPUTS[@]}"; then
     error "VOB mode is on. All the input files must be VOBs"
@@ -302,7 +316,7 @@ fi
 $BIN "${INPUT_OPTS[@]}" \
     -c:v $VCODEC -crf $CRF -preset $PRESET \
     "${VIDEO_FILTER_OPTS[@]}" \
-    -c:a $ACODEC -b:a $ABITRATE \
+    -c:a $ACODEC -b:a $ABITRATE -ar $AFREQ -ac $ACHANNELS \
     $FOURCC \
     $MP4FLAGS \
     "$OUTPUT"
