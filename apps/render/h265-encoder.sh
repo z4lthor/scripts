@@ -33,20 +33,30 @@ $0 [OPTION]... INPUT OUTPUT
 $0 [OPTION]... -c INPUT... OUTPUT
 
 Options:
--q, --quality VALUE       Set CRF 0-51 (default: $CRF)
--p, --preset PRESET       Set preset (default: $PRESET)
--s, --size WIDTH:HEIGHT   Set resolution (default: keep original size)
--c, --concat              Set concat demuxer
---audio-bitrate RATE      Set audio bitrate (default: $ABITRATE)
---audio-freq FREQUENCY    Set audio sampling frequency (default: $AFREQ)
---audio-channels CHANNELS Set number of audio channels (default: $ACHANNELS)
--y, --yes                 Skip all prompts
--h, --help                Show this help
+-q, --quality VALUE              Set CRF 0-51 (default: $CRF)
+-p, --preset PRESET              Set preset (default: $PRESET)
+-s, --size WIDTH:HEIGHT          Set resolution (default: keep original size)
+-c, --concat                     Set concat demuxer
+--position [START][-END|+DURATION]
+
+    START      : Timestamp (HH:MM:SS), defaults to 00:00:00 if omitted
+    -END       : Stops at this timestamp  (HH:MM:SS).
+    +DURATION  : Processes for this length (HH:MM:SS).
+
+--audio-bitrate RATE             Set audio bitrate (default: $ABITRATE)
+--audio-freq FREQUENCY           Set audio sampling frequency (default: $AFREQ)
+--audio-channels CHANNELS        Set number of audio channels (default: $ACHANNELS)
+-y, --yes                        Skip all prompts
+-h, --help                       Show this help
 
 Examples:
 $0 -q 23 --preset slow input.mkv output.mp4
 $0 -q 22 -s -1:1080 input.mp4 output.mp4
 $0 -q 21 -c VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB movie.mp4
+$0 --position 01:10:08 input.avi output.mp4
+$0 --position 01:10:08-02:30:00 input.avi output.mp4
+$0 --position 01:10:08+00:00:30 input.avi output.avi
+$0 --position +1m input.avi output.avi
 EOF
 }
 
@@ -60,6 +70,48 @@ info() {
 
 warn() {
     echo -e "${YELLOW}[WARN]${RESET} $1"
+}
+
+parse_position() {
+    local input="$1"
+    local regex="^([0-9:]+)?(-[0-9:]+|\+[0-9:]+)?$"
+
+    if [[ ! $input =~ $regex ]]; then
+        return 1
+    fi
+
+    local START END DURATION
+
+    if [[ "$input" == *"+"* ]]; then
+        START="${input%+*}"
+        DURATION="${input#*+}"
+    elif [[ "$input" == *"-"* && "$input" != -* ]]; then
+        START="${input%-*}"
+        END="${input#*-}"
+    elif [[ "$input" == -* ]]; then
+        START=""
+        END="${input#-}"
+    else
+        START="$input"
+    fi
+
+    echo "${START:-00:00:00}|${END}|${DURATION}"
+}
+create_position_option() {
+    local -n options=$1
+    local parsed="$2"
+
+    [[ -z "$parsed" ]] && return 0
+
+    IFS='|' read -r start end duration <<< "$parsed"
+
+    [[ -z "$start" || "$start" == "00:00:00" ]] || options+=(-ss "$start")
+    
+    if [[ -n "$end" ]]; then
+        options+=(-to "$end")
+    elif [[ -n "$duration" ]]; then
+        options+=(-t "$duration")
+    fi
 }
 
 is_vob() {
@@ -144,7 +196,7 @@ if ! command -v $BIN > /dev/null 2>&1; then
 fi
 
 OPTS=$(getopt -o q:p:s:cyh \
-    --long quality:,preset:,size:,concat,audio-bitrate:,audio-freq:,audio-channels:,yes,help \
+    --long quality:,preset:,size:,concat,position:,audio-bitrate:,audio-freq:,audio-channels:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -171,6 +223,10 @@ while true; do
         -c|--concat)
             CONCAT=true
             shift
+            ;;
+        --position)
+            POSITION="$2"
+            shift 2
             ;;
         --audio-bitrate)
             ABITRATE="$2"
@@ -231,6 +287,13 @@ for input in "${INPUTS[@]}"; do
 done
 
 echo "Inputs: ${INPUTS[@]}"
+
+POSITION_OPTS=()
+
+if [[ -n "$POSITION" ]]; then
+    options=$(parse_position $POSITION)
+    create_position_option POSITION_OPTS $options
+fi
 
 if $VOB_MODE && ! all_vobs "${INPUTS[@]}"; then
     error "VOB mode is on. All the input files must be VOBs"
@@ -313,13 +376,14 @@ if ! confirm_action "Do you want to continue?"; then
     exit 0
 fi
 
-$BIN "${INPUT_OPTS[@]}" \
-    -c:v $VCODEC -crf $CRF -preset $PRESET \
-    "${VIDEO_FILTER_OPTS[@]}" \
-    -c:a $ACODEC -b:a $ABITRATE -ar $AFREQ -ac $ACHANNELS \
-    $FOURCC \
-    $MP4FLAGS \
-    "$OUTPUT"
+$BIN "${POSITION_OPTS[@]}" \
+     "${INPUT_OPTS[@]}" \
+     -c:v $VCODEC -crf $CRF -preset $PRESET \
+     "${VIDEO_FILTER_OPTS[@]}" \
+     -c:a $ACODEC -b:a $ABITRATE -ar $AFREQ -ac $ACHANNELS \
+     $FOURCC \
+     $MP4FLAGS \
+     $OUTPUT
 
 if [[ $? -eq 0 ]]; then
     info "Encoding completed successfully."
