@@ -72,6 +72,12 @@ warn() {
     echo -e "${YELLOW}[WARN]${RESET} $1"
 }
 
+check_command() {
+    local bin="$1"
+
+    command -v "$bin" > /dev/null 2>&1
+}
+
 parse_position() {
     local input="$1"
     local regex="^([0-9:]+)?(-[0-9:]+|\+[0-9:]+)?$"
@@ -190,7 +196,7 @@ is_resolution_format() {
     fi
 }
 
-if ! command -v $BIN > /dev/null 2>&1; then
+if ! check_command $BIN; then
     error "$BIN not found"
     exit 1
 fi
@@ -259,7 +265,12 @@ while true; do
     esac
 done
 
-if [[ $# -lt 2 || ("$CONCAT" = "false" && $# -gt 2) ]]; then
+if [[ $# -lt 2 ]]; then
+    help
+    exit 1
+fi
+
+if [[ "$CONCAT" = "true" && $# -le 2 ]]; then
     help
     exit 1
 fi
@@ -286,8 +297,6 @@ for input in "${INPUTS[@]}"; do
     fi
 done
 
-echo "Inputs: ${INPUTS[@]}"
-
 POSITION_OPTS=()
 
 if [[ -n "$POSITION" ]]; then
@@ -295,7 +304,7 @@ if [[ -n "$POSITION" ]]; then
     create_position_option POSITION_OPTS $options
 fi
 
-if $VOB_MODE && ! all_vobs "${INPUTS[@]}"; then
+if "$VOB_MODE" = "true" && ! all_vobs "${INPUTS[@]}"; then
     error "VOB mode is on. All the input files must be VOBs"
     exit 1
 fi
@@ -321,9 +330,9 @@ fi
 
 INPUT_OPTS=(-i "${INPUTS[0]}")
 
-if $CONCAT; then
+if [[ "$CONCAT" = "true" ]]; then
     # Use concat protocol for VOB files and the concat demuxer for everything else.
-    if $VOB_MODE; then
+    if [[ "$VOB_MODE" = "true" ]]; then
         INPUT_OPTS=(-i "concat:$(IFS="|"; echo "${INPUTS[*]}")")
     else
         INPUT_OPTS=(-f concat -safe 0 -i "$(create_temporary_filelist "${INPUTS[@]}")")
@@ -360,7 +369,7 @@ if confirm_action "Do you want to check integrity?"; then
 fi
 
 # Check compatibility
-if $CONCAT; then
+if [[ "$CONCAT" = "true" ]] ; then
     echo -n "Checking compatibility ... "
     if ./check-video-compatibility.sh "${INPUTS[@]}"> /dev/null 2>&1; then
         echo "OK"
