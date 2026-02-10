@@ -174,13 +174,22 @@ confirm_action() {
 
 is_number() {
     local num=$1
+
     [[ "$num" =~ ^[0-9]+$ ]]
 }
 
 is_divisible_by_8() {
     local num=$1
+
     (( num % 8 == 0 ))
 }
+
+is_crf() {
+    local crf="$1"
+
+    is_number "$crf" && (( crf >= 0 && crf <= 51 ))
+}
+
 
 is_resolution_format() {
     local size=$1
@@ -317,13 +326,8 @@ if "$VOB_MODE" = "true" && ! all_vobs "${INPUTS[@]}"; then
     exit 1
 fi
 
-if [[ ! "$CRF" =~ ^[0-9]+$ ]]; then
-    error "CRF must be a number."
-    exit 1
-fi
-
-if (( CRF < 0 || CRF > 51 )); then
-    error "Error: CRF must be between 0 and 51."
+if ! is_crf "$CRF"; then
+    error "Error: CRF must be a number between 0 and 51."
     exit 1
 fi
 
