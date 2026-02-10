@@ -78,15 +78,17 @@ check_command() {
     command -v "$bin" > /dev/null 2>&1
 }
 
+is_position() {
+    local input="$1"
+
+    [[ "$input" =~ ^([0-9]{1,2}(:[0-5][0-9]){0,2})?([+-][0-9]{1,2}(:[0-5][0-9]){0,2})?$ ]]
+}
+
 parse_position() {
     local input="$1"
-    local regex="^([0-9:]+)?(-[0-9:]+|\+[0-9:]+)?$"
-
-    if [[ ! $input =~ $regex ]]; then
-        return 1
-    fi
-
     local START END DURATION
+
+    ! is_position $input && return 1
 
     if [[ "$input" == *"+"* ]]; then
         START="${input%+*}"
@@ -103,6 +105,7 @@ parse_position() {
 
     echo "${START:-00:00:00}|${END}|${DURATION}"
 }
+
 create_position_option() {
     local -n options=$1
     local parsed="$2"
@@ -300,8 +303,13 @@ done
 POSITION_OPTS=()
 
 if [[ -n "$POSITION" ]]; then
-    options=$(parse_position $POSITION)
-    create_position_option POSITION_OPTS $options
+    if ! is_position "$POSITION"; then
+        error "Wrong format. Position must be HH:MM:SS"
+        exit 1
+    fi
+
+    parsed_opts=$(parse_position $POSITION)
+    create_position_option POSITION_OPTS $parsed_opts
 fi
 
 if "$VOB_MODE" = "true" && ! all_vobs "${INPUTS[@]}"; then
