@@ -282,7 +282,7 @@ if [[ $# -lt 2 ]]; then
     exit 1
 fi
 
-if [[ "$CONCAT" = "true" && $# -le 2 ]]; then
+if [[ "$CONCAT" = "true" && $# -le 2 ]] || [[ "$CONCAT" = "false" && $# -gt 2 ]]; then
     help
     exit 1
 fi
