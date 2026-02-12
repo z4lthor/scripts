@@ -18,11 +18,11 @@ SELECTION=$(echo -e "$OPTS" | rofi -dmenu -i -p "System:" \
 
 case "$SELECTION" in
     *Poweroff)
-        [[ $(confirm "Poweroff") == "*Yes" ]] && systemctl poweroff ;;
+        [[ $(confirm "Poweroff") == *"Yes" ]] && systemctl poweroff ;;
     *Restart)
-        [[ $(confirm "Restart") == "*Yes" ]] && systemctl reboot ;;
+        [[ $(confirm "Restart") == *"Yes" ]] && systemctl reboot ;;
     *Suspend)
         systemctl suspend ;;
     *Close*)
-        [[ $(confirm "Close") == "*Yes" ]] && i3-msg exit ;;
+        [[ $(confirm "Close") == *"Yes" ]] && i3-msg exit ;;
 esac
