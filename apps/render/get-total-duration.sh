@@ -16,9 +16,9 @@ error_found=0
 for input in "${INPUTS[@]}"; do
     if [[ -f "$input" ]]; then
         duration=$(LC_ALL=C ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input")
-        
+
         if [[ $duration =~ ^[0-9.]+$ ]]; then
-            us=$(echo "$duration * 1000000 / 1" | bc)
+            us=$(awk -v d="$duration" 'BEGIN { printf "%.0f", d * 1000000 }')
             total=$((total + us))
         else
             echo "Error: Cannot get the duration of $input" >&2
