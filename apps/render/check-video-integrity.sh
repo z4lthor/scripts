@@ -57,14 +57,14 @@ check_file() {
         return 1
     fi
 
-    local duration=$($FFPROBE_BIN -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
+    local duration=$($FFPROBE_BIN -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
 
     if [[ -z "$duration" || "$duration" = "N/A" ]] || ! is_positive "$duration"; then
         echo "Error: Invalid duration: $(basename "$file")" >&2
         return 1
     fi
 
-    local streams=$($FFPROBE_BIN -v error -select_streams v -show_entries stream=index -of csv=p=0 "$file" | wc -l)
+    local streams=$($FFPROBE_BIN -v quiet -select_streams v -show_entries stream=index -of csv=p=0 "$file" | wc -l)
 
     if [[ "$streams" -eq 0 ]]; then
         echo "Error: No video streams: $(basename "$file")" >&2
