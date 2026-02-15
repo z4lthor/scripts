@@ -397,14 +397,37 @@ if ! confirm_action "Do you want to continue?"; then
     exit 0
 fi
 
-$BIN "${POSITION_OPTS[@]}" \
-     "${INPUT_OPTS[@]}" \
-     -c:v $VCODEC -crf $CRF -preset $PRESET \
-     "${VIDEO_FILTER_OPTS[@]}" \
-     -c:a $ACODEC -b:a $ABITRATE -ar $AFREQ -ac $ACHANNELS \
-     $FOURCC \
-     $MP4FLAGS \
-     $OUTPUT
+total=$(./get-total-duration.sh "${INPUTS[@]}")
+
+if [[ $? -ne 0 ]]; then
+    error "Duration calculation failed"
+    exit 1
+fi
+
+total_sec=$(( total / 1000000 ))
+
+while read -r line; do
+    if [[ "$line" =~ out_time_ms=([0-9]+) ]]; then
+        time=${line#*=}
+
+        if is_number "$time"; then
+            time_sec=$(( time / 1000000 ))
+            percent=$(( time_sec * 100 / total_sec ))
+            (( percent > 100 )) && percent=100
+
+            echo -ne "Progress: [${percent}%] process ${time_sec}s of ${total_sec}s\r"
+        fi
+    fi
+done < <( "$BIN" -v error \
+    "${POSITION_OPTS[@]}" \
+    "${INPUT_OPTS[@]}" \
+    -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
+    "${VIDEO_FILTER_OPTS[@]}" \
+    -c:a "$ACODEC" -b:a "$ABITRATE" -ar "$AFREQ" -ac "$ACHANNELS" \
+    $FOURCC \
+    $MP4FLAGS \
+    -progress pipe:1 \
+    "$OUTPUT" 2>&1 )
 
 if [[ $? -eq 0 ]]; then
     info "Encoding completed successfully."
