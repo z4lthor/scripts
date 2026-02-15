@@ -368,6 +368,11 @@ else
 fi
 info "Output: $(basename "$OUTPUT")"
 
+if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(basename "$OUTPUT")?"; then
+    warn "Encoding aborted."
+    exit 0
+fi
+
 # Check integrity
 if confirm_action "Do you want to check integrity?"; then
     echo -n "Checking integrity ... "
@@ -418,7 +423,7 @@ while read -r line; do
             echo -ne "Progress: [${percent}%] process ${time_sec}s of ${total_sec}s\r"
         fi
     fi
-done < <( "$BIN" -v error \
+done < <( "$BIN" -y -loglevel error \
     "${POSITION_OPTS[@]}" \
     "${INPUT_OPTS[@]}" \
     -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
