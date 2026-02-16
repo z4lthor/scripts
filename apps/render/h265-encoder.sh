@@ -397,19 +397,21 @@ if [[ "$CONCAT" = "true" ]] ; then
     fi
 fi
 
-if ! confirm_action "Do you want to continue?"; then
-    warn "Encoding aborted."
-    exit 0
+if [[ -n "$POSITION" ]]; then
+    total=$(./get-total-duration.sh -p "$POSITION" "${INPUTS[@]}")
+else
+    total=$(./get-total-duration.sh "${INPUTS[@]}")
 fi
 
-total=$(./get-total-duration.sh "${INPUTS[@]}")
-
-if [[ $? -ne 0 ]]; then
+if [[ $? -ne 0 || "$total" -eq 0 ]]; then
     error "Duration calculation failed"
     exit 1
 fi
 
-total_sec=$(( total / 1000000 ))
+if ! confirm_action "Do you want to continue?"; then
+    warn "Encoding aborted."
+    exit 0
+fi
 
 while read -r line; do
     if [[ "$line" =~ out_time_ms=([0-9]+) ]]; then
@@ -417,10 +419,10 @@ while read -r line; do
 
         if is_number "$time"; then
             time_sec=$(( time / 1000000 ))
-            percent=$(( time_sec * 100 / total_sec ))
+            percent=$(( time_sec * 100 / total ))
             (( percent > 100 )) && percent=100
 
-            echo -ne "Progress: [${percent}%] process ${time_sec}s of ${total_sec}s\r"
+            echo -ne "Progress: [${percent}%] process ${time_sec}s of ${total}s\r"
         fi
     fi
 done < <( "$BIN" -y -loglevel error \
