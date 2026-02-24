@@ -4,7 +4,6 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
-OUTPUT="$2"
 FMT="x11grab"
 VCODEC="libx264"
 CRF=25
