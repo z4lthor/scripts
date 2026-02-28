@@ -21,6 +21,8 @@ $0 [OPTION]... [OUTPUT]
 Options:
 -m, --monitor MONITOR       Record monitor MONITOR
 -f, --focus                 Record focused window
+
+* The options --monitor and --focus are mutually exclusive.
 EOF
 }
 
@@ -89,6 +91,11 @@ while true; do
 done
 
 OUTPUT=${1:-screen_output_$(date +%Y-%m-%d_%H-%M-%S).mp4}
+
+if [[ -n "$MONITOR" && "$FOCUS" = "true" ]]; then
+    help
+    exit 1
+fi
 
 if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(basename "$OUTPUT")?"; then
     echo "Recording aborted."
