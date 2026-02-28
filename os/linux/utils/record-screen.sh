@@ -109,11 +109,21 @@ if [[ -n "$MONITOR" ]]; then
         echo "Error: Not found monitor $MONITOR"
         exit 1
     fi
-fi
-
-if [[ "$FOCUS" = "true" ]]; then
+elif [[ "$FOCUS" = "true" ]]; then
     read -r X Y W H < <(xdotool getwindowfocus getwindowgeometry --shell | \
         sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
+else
+    read W H X Y < <(xrandr --query | awk '
+    $2 == "connected" && /[0-9]+x[0-9]+\+[0-9]+\+[0-9]+/ {
+        # Search geometry (i.e. 1920x1080+0+0)
+        match($0, /([0-9]+)x([0-9]+)\+([0-9]+)\+([0-9]+)/, m)
+
+        w = m[1]; h = m[2]; x = m[3]; y = m[4]
+
+        if (x + w > max_w) max_w = x + w
+            if (y + h > max_h) max_h = y + h
+            } 
+    END { print max_w, max_h, 0, 0 }')
 fi
 
 ffmpeg \
