@@ -1,0 +1,74 @@
+#!/bin/bash
+# Creates links for scripts found recursively in a source directory
+# Author: z4lthor <z4lthor@gmail.com>
+
+set -euo pipefail
+
+SRC_DIR=${1-}
+DEST_DIR="$HOME/.local/bin"
+
+if [[ -z "$SRC_DIR" ]]; then
+    echo "Usage: $(basename "$0") SOURCE"
+    exit 1
+fi
+
+SRC_DIR=$(realpath -m "$1")
+
+if [[ ! -d "$SRC_DIR" ]]; then
+    echo "Error: Source directory $SRC_DIR doesn't exist" >&2
+    exit 1
+fi
+
+echo "Source: $SRC_DIR"
+echo "Destination: $DEST_DIR"
+
+mkdir -p "$DEST_DIR"
+
+echo "Clean up broken symbolic links from $DEST_DIR ..."
+
+find "$DEST_DIR" -type l -xtype l -delete
+
+total=0
+created=0
+skipped=0
+conflicts=0
+
+echo "Syncing scripts from $SRC_DIR ..."
+
+while IFS= read -r -d '' script; do
+    ((total++)) || true
+
+    name=$(basename "$script")
+    name_no_ext="${name%.*}"
+    link="$DEST_DIR/${name_no_ext}"
+
+    if [[ ! -x "$script" ]]; then
+        if chmod +x "$script" 2>/dev/null; then
+            echo "Made executable: $name"
+        else
+            echo "Warning: Cannot make '$name' executable, skipping" >&2
+            ((skipped++)) || :
+            continue
+        fi
+    fi
+
+    if [ -L "$link" ] || [ -e "$link" ]; then
+        if [ "$(readlink -f "$link" 2>/dev/null || echo '')" == "$script" ]; then
+            continue
+        fi
+        echo "Conflict: $name already exists and points elsewhere" >&2
+        ((conflicts++)) || :
+        continue
+    fi
+
+    if ln -s "$script" "$link" 2>/dev/null; then
+        echo "Created: $link -> $script"
+        ((created++)) || :
+    else
+        echo "Error: Failed to create link $name" >&2
+        ((conflicts++)) || :
+    fi
+
+done < <(find "$SRC_DIR" -type f -not -name ".*" -not -path "*/.*" \( -executable -o -name "*.sh" \) -print0)
+
+echo "Summary: Total $total | Created $created | Skipped: $skipped | Conflicts $conflicts"
