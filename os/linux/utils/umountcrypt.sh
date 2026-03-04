@@ -11,7 +11,7 @@ GREEN="\e[32m"
 RESET="\e[0m"
 
 help() {
-    echo -e "Usage: $0 MOUNTPOINT"
+    echo -e "Usage: $(basename "$0") MOUNTPOINT"
 }
 
 error() {

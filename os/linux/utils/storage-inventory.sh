@@ -5,7 +5,7 @@
 #
 
 if [[ "$#" -ne 2 ]]; then
-    echo "Usage: $0 PATH OUTPUT"
+    echo "Usage: $(basename "$0") PATH OUTPUT"
     exit 1
 fi
 

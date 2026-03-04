@@ -26,7 +26,7 @@ print_msg() {
 HOST="$1"
 
 if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 HOST"
+    echo "Usage: $(basename "$0") HOST"
     exit 1
 fi
 

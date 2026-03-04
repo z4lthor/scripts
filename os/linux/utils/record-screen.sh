@@ -16,7 +16,7 @@ FOCUS=false
 help() {
 cat <<EOF
 Usage:
-$0 [OPTION]... [OUTPUT]
+$(basename "$0") [OPTION]... [OUTPUT]
 
 Options:
 -m, --monitor MONITOR       Record monitor MONITOR

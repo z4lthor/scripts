@@ -15,7 +15,7 @@ is_active() {
 }
 
 if [[ $# -eq 0 ]]; then
-    echo "Usage: $0 INPUT [POSITION]"
+    echo "Usage: $(basename "$0") INPUT [POSITION]"
     exit 1
 fi
 

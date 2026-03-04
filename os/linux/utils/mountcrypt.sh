@@ -15,7 +15,7 @@ RESET="\e[0m"
 help() {
 cat <<EOF
 Usage:
-$0 [options] <DEVICE> <MOUNT_POINT>
+$(basename "$0") [options] <DEVICE> <MOUNT_POINT>
 
 Options:
 -h, --help                Show this help

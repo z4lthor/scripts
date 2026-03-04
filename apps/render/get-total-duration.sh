@@ -9,7 +9,7 @@ BIN=/usr/bin/ffprobe
 help() {
 cat <<EOF
 Usage:
-$0 [OPTION]... INPUT...
+$(basename "$0") [OPTION]... INPUT...
 
 Options:
 -p, --position [START][-END|+DURATION]

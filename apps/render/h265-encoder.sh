@@ -29,8 +29,8 @@ RESET="\e[0m"
 help() {
 cat <<EOF
 Usage:
-$0 [OPTION]... INPUT OUTPUT
-$0 [OPTION]... -c INPUT... OUTPUT
+$(basename "$0") [OPTION]... INPUT OUTPUT
+$(basename "$0") [OPTION]... -c INPUT... OUTPUT
 
 Options:
 -q, --quality VALUE              Set CRF 0-51 (default: $CRF)
@@ -50,13 +50,13 @@ Options:
 -h, --help                       Show this help
 
 Examples:
-$0 -q 23 --preset slow input.mkv output.mp4
-$0 -q 22 -s -1:1080 input.mp4 output.mp4
-$0 -q 21 -c VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB movie.mp4
-$0 --position 01:10:08 input.avi output.mp4
-$0 --position 01:10:08-02:30:00 input.avi output.mp4
-$0 --position 01:10:08+00:00:30 input.avi output.avi
-$0 --position +1m input.avi output.avi
+$(basename "$0") -q 23 --preset slow input.mkv output.mp4
+$(basename "$0") -q 22 -s -1:1080 input.mp4 output.mp4
+$(basename "$0") -q 21 -c VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB movie.mp4
+$(basename "$0") --position 01:10:08 input.avi output.mp4
+$(basename "$0") --position 01:10:08-02:30:00 input.avi output.mp4
+$(basename "$0") --position 01:10:08+00:00:30 input.avi output.avi
+$(basename "$0") --position +1m input.avi output.avi
 EOF
 }
 
@@ -321,7 +321,7 @@ if [[ -n "$POSITION" ]]; then
     create_position_option POSITION_OPTS $parsed_opts
 fi
 
-if "$VOB_MODE" = "true" && ! all_vobs "${INPUTS[@]}"; then
+if [[ "$VOB_MODE" = "true" ]] && ! all_vobs "${INPUTS[@]}"; then
     error "VOB mode is on. All the input files must be VOBs"
     exit 1
 fi

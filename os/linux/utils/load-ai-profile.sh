@@ -9,7 +9,7 @@ LOADER="$BASEDIR/loader.txt"
 PROFILE="$1"
 
 if [[ $# -eq 0 ]]; then
-    echo "Usage: $0 PROFILE"
+    echo "Usage: $(basename "$0") PROFILE"
     exit 1
 fi
 

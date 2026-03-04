@@ -124,7 +124,7 @@ if ! command -v $FFMPEG_BIN > /dev/null 2>&1; then
 fi
 
 if [[ $# -eq 0 ]]; then
-    echo "Usage: $0 INPUT..." >&2
+    echo "Usage: $(basename "$0") INPUT..." >&2
     exit 1
 fi
 

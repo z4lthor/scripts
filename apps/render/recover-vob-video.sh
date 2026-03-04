@@ -46,7 +46,7 @@ create_temporary_directory() {
 }
 
 if [[ $# -ne 2 ]]; then
-    echo "Usage: $0 INPUT OUTPUT"
+    echo "Usage: $(basename "$0") INPUT OUTPUT"
     exit 1
 fi
 
