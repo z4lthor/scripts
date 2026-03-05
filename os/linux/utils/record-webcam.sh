@@ -4,11 +4,44 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
+BIN=/usr/bin/ffmpeg
+VCODEC="libx264"
+CRF=25
+PRESET="ultrafast"
+PIX_FORMAT="yuv420p"
 DEVICE="/dev/video0"
-RES="1280x720"
-FPS=30
-OUTPUT="${1:-output_$(date +%Y%m%d_%H%M%S).mp4}"
+OUTPUT="${1:-webcam_$(date +%Y%m%d_%H%M%S).mp4}"
 DURATION="${2:-0}"
+
+get_max_resolution() {
+    local device="$1"
+
+    [[ -z "$device" ]] && return 1
+
+    res=$(v4l2-ctl --device="$device" --list-formats-ext | grep "Size: Discrete" | awk '{print $3}' | sort -t'x' -k1,1nr -k2,2nr | head -n 1)
+
+    echo "$res"
+}
+
+get_max_fps() {
+    local device="$1"
+    local res="$2"
+
+    [[ -z "$device" || -z "$res" ]] && return 1
+
+    fps=$(v4l2-ctl --device="$device" --list-formats-ext | sed -n "/$res/,/Size:/p" | grep "fps" | grep -oP '\d+\.\d+' | sort -rn | head -n 1 | cut -d. -f1)
+
+    echo "$fps"
+}
+
+if [[ ! -e "$DEVICE" ]]; then
+    echo "Error: Device $DEVICE not found."
+    exit 1
+fi
+
+RES=$(get_max_resolution "$DEVICE")
+FPS=$(get_max_fps "$DEVICE" "$RES")
+TIME=$([[ "$DURATION" -eq 0 ]] && echo "" || echo "-t $DURATION")
 
 echo "Device: $DEVICE"
 echo "Resolution: $RES"
@@ -16,17 +49,16 @@ echo "FPS: $FPS"
 echo "Duration: ${DURATION}s (0=infinity)"
 echo "Output: $OUTPUT"
 
-if [ "$DURATION" = "0" ]; then
-    echo "Recording (Ctrl+C to stop)..."
-    ffmpeg -f v4l2 -framerate "$FPS" -video_size "$RES" -i "$DEVICE" \
-        -c:v libx264 -pix_fmt yuv420p \
-        -preset veryfast -crf 25 "$OUTPUT"
-else
-    echo "Recording $DURATION seconds..."
-    ffmpeg -f v4l2 -framerate $FPS -video_size $RES -i $DEVICE \
-        -t $DURATION -c:v libx264 -pix_fmt yuv420p \
-        -preset veryfast -crf 25 $OUTPUT
-fi
+echo "Recording (Ctrl+C to stop)..."
+
+ffmpeg -f v4l2 \
+    -framerate "$FPS" \
+    -video_size "$RES" \
+    -i "$DEVICE" \
+    $TIME \
+    -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
+    -pix_fmt "$PIX_FORMAT" \
+    "$OUTPUT"
 
 echo "Ready on $OUTPUT"
 
