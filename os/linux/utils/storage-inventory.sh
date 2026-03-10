@@ -38,7 +38,7 @@ fi
 
 echo -n "Making $DEVICE inventory ... "
 
-if find "$MOUNTPOINT" -printf "%M %u %g %s %t %p\n" > "$OUTPUT"; then
+if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%A@|%p|%l\0" > "$OUTPUT"; then
     echo "OK"
     echo
     echo "Output: $OUTPUT"
