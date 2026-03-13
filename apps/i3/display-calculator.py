@@ -6,13 +6,17 @@ import sys
 import subprocess
 from numpy import *
 
+# Copy text to the X11 clipboard using xclip, detached from the parent
+# process so the content persists after the REPL window is closed.
 def _copy_to_clipboard(text):
     try:
-        subprocess.run(
+        subprocess.Popen(
             ["xclip", "-selection", "clipboard"],
-            input=text.encode(),
-            check=True
-        )
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        ).communicate(input=text.encode())
     except FileNotFoundError:
         pass
 
