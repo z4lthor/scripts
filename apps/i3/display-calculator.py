@@ -3,7 +3,18 @@
 # Author: z4lthor <z4lthor@gmail.com>
 
 import sys
+import subprocess
 from numpy import *
+
+def _copy_to_clipboard(text):
+    try:
+        subprocess.run(
+            ["xclip", "-selection", "clipboard"],
+            input=text.encode(),
+            check=True
+        )
+    except FileNotFoundError:
+        pass
 
 def _display_hook(value):
     if value is not None:
@@ -12,7 +23,10 @@ def _display_hook(value):
             if formatted in ('0', '-0') and value != 0:
                 formatted = f"{value:.6e}"
             print(formatted)
+            _copy_to_clipboard(formatted)
         else:
-            print(repr(value))
+            output = repr(value)
+            print(output)
+            _copy_to_clipboard(output)
 
 sys.displayhook = _display_hook
