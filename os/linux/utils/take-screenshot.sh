@@ -6,26 +6,26 @@
 
 DEFDIR=$HOME/Pictures/Screenshots
 DSTDIR=${1:-$DEFDIR}
-ID=1001
-
-echo "Destination directory: $DSTDIR"
 
 if [[ ! -d "$DSTDIR" ]]; then
-    echo "Directory $DSTDIR doesn't exists"
+    echo "Directory $DSTDIR does not exists. Creating it..."
+    if ! mkdir -p "$DSTDIR"; then
+        echo "Error: Failed to create directory $DSTDIR" >&2
+        exit 1
+    fi
+fi
+
+if [[ ! -w "$DSTDIR" ]]; then
+    echo "Error: Directory $DSTDIR is not writable" >&2
     exit 1
 fi
 
 FILE="$DSTDIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
 
-scrot -d 1 "$FILE"
-
-if [[ -f "$FILE" ]]; then
-    dunstify -r $ID \
-             -a "Scrot" \
-             -i "$FILE" \
-             "Screenshot Taken" \
-             "File: $(basename "$FILE")" \
-             --action="open,Open Folder"
+if scrot -d 1 "$FILE"; then
+    echo "Screenshot $(basename "$FILE") saved in $(dirname "$FILE")"
+    exit 0
 else
-    dunstify -u critical "Error" "Failed to take screenshot"
+    echo "Error: scrot failed" >&2
+    exit 1
 fi
