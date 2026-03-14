@@ -23,7 +23,7 @@ fi
 FILE="$DSTDIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
 
 if scrot -d 1 "$FILE"; then
-    echo "Screenshot $(basename "$FILE") saved in $(dirname "$FILE")"
+    echo "$FILE"
     exit 0
 else
     echo "Error: scrot failed" >&2
