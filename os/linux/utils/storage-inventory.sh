@@ -51,8 +51,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ "$#" -ne 2 ]]; then
-    echo "Usage: $(basename "$0") DEVICE OUTPUT" >&2
+if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
+    echo "Usage: $(basename "$0") DEVICE [OUTPUT]" >&2
     exit 1
 fi
 
@@ -60,7 +60,8 @@ DEVICE="$1"
 PHYSICAL_DEVICE=$(get_physical_device "$DEVICE")
 DEVICE_MODEL=$(get_device_model "$PHYSICAL_DEVICE")
 DEVICE_SIZE=$(get_device_size "$PHYSICAL_DEVICE")
-OUTPUT="$2"
+DATE=$(date +%Y-%m-%d-%H-%M-%S)
+OUTPUT=${2-$(printf "%s_%s_%s.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")}
 
 if [[ ! -b "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found" >&2
