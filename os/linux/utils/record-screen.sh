@@ -126,7 +126,14 @@ else
     END { print max_w, max_h, 0, 0 }')
 fi
 
-ffmpeg \
+echo "Recording ..."
+
+while read -r line; do
+    if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
+        time=${line#*=}
+    fi
+    echo -ne "Time: ${time}s\r"
+done < <( "$BIN" -y -loglevel error \
   -video_size "${W}x${H}" \
   -framerate "$FPS" \
   -f "$FMT" \
@@ -135,6 +142,5 @@ ffmpeg \
   -preset "$PRESET" \
   -crf "$CRF" \
   -pix_fmt "$PIXFMT" \
-  "$OUTPUT"
-
-exit 0
+  -progress pipe:1 \
+  "$OUTPUT" 2>&1 )
