@@ -34,6 +34,12 @@ get_max_fps() {
     echo "$fps"
 }
 
+finish() {
+    echo -e "\n\nRecording stopped by user."
+    echo "File saved to $OUTPUT"
+    exit 0
+}
+
 if [[ ! -e "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found."
     exit 1
@@ -42,6 +48,8 @@ fi
 RES=$(get_max_resolution "$DEVICE")
 FPS=$(get_max_fps "$DEVICE" "$RES")
 TIME=$([[ "$DURATION" -eq 0 ]] && echo "" || echo "-t $DURATION")
+
+trap finish SIGINT
 
 echo "Device: $DEVICE"
 echo "Resolution: $RES"
