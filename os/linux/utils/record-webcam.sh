@@ -51,14 +51,21 @@ echo "Output: $OUTPUT"
 
 echo "Recording (Ctrl+C to stop)..."
 
-ffmpeg -f v4l2 \
+while read -r line; do
+    if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
+        time=${line#*=}
+    fi
+    echo -ne "Time: ${time}s\r"
+done < <( "$BIN" -y -loglevel error \
+    -f v4l2 \
     -framerate "$FPS" \
     -video_size "$RES" \
     -i "$DEVICE" \
     $TIME \
     -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
     -pix_fmt "$PIX_FORMAT" \
-    "$OUTPUT"
+    -progress pipe:1 \
+    "$OUTPUT" 2>&1 )
 
 echo "Ready on $OUTPUT"
 
