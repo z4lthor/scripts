@@ -49,6 +49,12 @@ confirm_action() {
     done
 }
 
+finish() {
+    echo -e "\n\nRecording stopped by user."
+    echo "File saved to $OUTPUT"
+    exit 0
+}
+
 if ! check_command $BIN; then
     error "$BIN not found"
     exit 1
@@ -125,6 +131,8 @@ else
             } 
     END { print max_w, max_h, 0, 0 }')
 fi
+
+trap finish SIGINT
 
 echo "Recording ..."
 
