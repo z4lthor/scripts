@@ -139,8 +139,23 @@ echo "Recording ..."
 while read -r line; do
     if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
         time=${line#*=}
+        time=${time%.*}
     fi
-    echo -ne "Time: ${time}s\r"
+
+    if [[ "$line" =~ fps=([0-9.]+) ]]; then
+        fps=${line#*=}
+    fi
+
+    if [[ "$line" =~ bitrate=([0-9.]+) ]]; then
+        bitrate=${line#*=}
+    fi
+
+    if [[ "$line" =~ total_size=([0-9.]+) ]]; then
+        size=${line#*=}
+        size_mib=$(echo "scale=2; $size / 1048576" | bc)
+    fi
+
+    echo -ne "Time: ${time}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
 done < <( "$BIN" -y -loglevel error \
   -video_size "${W}x${H}" \
   -framerate "$FPS" \
