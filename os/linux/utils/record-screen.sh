@@ -56,7 +56,7 @@ finish() {
 }
 
 if ! check_command $BIN; then
-    error "$BIN not found"
+    echo "$BIN not found" >&2
     exit 1
 fi
 
@@ -112,7 +112,7 @@ if [[ -n "$MONITOR" ]]; then
     read -r W H X Y < <(xrandr --query | grep "^$MONITOR" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' ')
 
     if [ -z "$W" ]; then
-        echo "Error: Not found monitor $MONITOR"
+        echo "Error: Not found monitor $MONITOR" >&2
         exit 1
     fi
 elif [[ "$FOCUS" = "true" ]]; then
