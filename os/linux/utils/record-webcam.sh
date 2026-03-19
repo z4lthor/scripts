@@ -57,13 +57,28 @@ echo "FPS: $FPS"
 echo "Duration: ${DURATION}s (0=infinity)"
 echo "Output: $OUTPUT"
 
-echo "Recording (Ctrl+C to stop)..."
+echo "Recording (ctrl+c to stop)..."
 
 while read -r line; do
     if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
         time=${line#*=}
+        time=${time%.*}
     fi
-    echo -ne "Time: ${time}s\r"
+
+    if [[ "$line" =~ fps=([0-9.]+) ]]; then
+        fps=${line#*=}
+    fi
+
+    if [[ "$line" =~ bitrate=([0-9.]+) ]]; then
+        bitrate=${line#*=}
+    fi
+
+    if [[ "$line" =~ total_size=([0-9.]+) ]]; then
+        size=${line#*=}
+        size_mib=$(echo "scale=2; $size / 1048576" | bc)
+    fi
+
+    echo -ne "Time: ${time}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
 done < <( "$BIN" -y -loglevel error \
     -f v4l2 \
     -framerate "$FPS" \
@@ -74,7 +89,3 @@ done < <( "$BIN" -y -loglevel error \
     -pix_fmt "$PIX_FORMAT" \
     -progress pipe:1 \
     "$OUTPUT" 2>&1 )
-
-echo "Ready on $OUTPUT"
-
-exit 0
