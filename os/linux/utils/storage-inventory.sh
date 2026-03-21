@@ -51,8 +51,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
-    echo "Usage: $(basename "$0") DEVICE [OUTPUT]" >&2
+if [[ "$#" -ne 1 ]]; then
+    echo "Usage: $(basename "$0") DEVICE" >&2
     exit 1
 fi
 
@@ -61,17 +61,11 @@ PHYSICAL_DEVICE=$(get_physical_device "$DEVICE")
 DEVICE_MODEL=$(get_device_model "$PHYSICAL_DEVICE")
 DEVICE_SIZE=$(get_device_size "$PHYSICAL_DEVICE")
 DATE=$(date +%Y-%m-%d-%H-%M-%S)
-OUTPUT=${2-$(printf "%s_%s_%s.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")}
+OUTPUT_META=$(printf "%s_%s_%s_meta.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")
+OUTPUT_HASHES=$(printf "%s_%s_%s_hashes.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")
 
 if [[ ! -b "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found" >&2
-    exit 1
-fi
-
-OUTPUT_DIR=$(dirname "$OUTPUT")
-
-if [[ ! -d "$OUTPUT_DIR" ]]; then
-    echo "Error: Output directory $OUTPUT_DIR does not exists" >&2
     exit 1
 fi
 
@@ -86,17 +80,19 @@ echo "Details"
 echo "Device: $PHYSICAL_DEVICE"
 echo "Model:  $DEVICE_MODEL"
 echo "Size:   $DEVICE_SIZE"
-echo "Output: $OUTPUT"
+echo "File Metadata: $OUTPUT_META"
+echo "File Hashes: $OUTPUT_HASHES"
 
-echo -n "Making inventory ... "
+echo -n "Metadata file... "
 
-if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT"; then
-    echo "OK"
-    echo
-    echo "Output: $OUTPUT"
-else
-    echo "Fail" >&2
-    exit 1
-fi
+find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT_META"
+
+echo "OK"
+
+echo -n "Hashes file... "
+
+find "$MOUNTPOINT" -xdev -type f -print0 | xargs -0 sha256sum > "$OUTPUT_HASHES"
+
+echo "OK"
 
 exit 0
