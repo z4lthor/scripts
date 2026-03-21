@@ -90,7 +90,7 @@ echo "Output: $OUTPUT"
 
 echo -n "Making inventory ... "
 
-if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%A@|%p|%l\0" > "$OUTPUT"; then
+if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT"; then
     echo "OK"
     echo
     echo "Output: $OUTPUT"
