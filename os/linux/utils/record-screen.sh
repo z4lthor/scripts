@@ -12,6 +12,10 @@ PRESET="veryfast"
 PIXFMT="yuv420p"
 FPS=30
 FOCUS=false
+FFMPEG_PID=""
+FIFO=$(mktemp -u /tmp/record-screen_progress.XXXXXX)
+
+mkfifo "$FIFO"
 
 help() {
 cat <<EOF
@@ -50,8 +54,21 @@ confirm_action() {
 }
 
 finish() {
-    echo -e "\n\nRecording stopped by user."
-    echo "File saved to $OUTPUT"
+    echo -e "\n\nStopping recording..."
+
+    trap '' SIGINT
+
+    if [[ -n "$ffmpeg_pid" ]]; then
+        kill -SIGINT "$FFMPEG_PID" 2>/dev/null
+
+        echo "Waiting for ffmpeg to finalize file..."
+
+        wait "$FFMPEG_PID" 2>/dev/null
+    fi
+
+    rm -f "$FIFO"
+
+    echo "File saved to $OUTPUT ($(du -sh "$OUTPUT" | awk '{print $1}'))"
     exit 0
 }
 
@@ -141,6 +158,20 @@ trap finish SIGINT
 
 echo "Recording ..."
 
+"$BIN" -y -loglevel error \
+    -video_size "${W}x${H}" \
+    -framerate "$FPS" \
+    -f "$FMT" \
+    -i ":0.0+$X,$Y" \
+    -c:v "$VCODEC" \
+    -preset "$PRESET" \
+    -crf "$CRF" \
+    -pix_fmt "$PIXFMT" \
+    -progress "$FIFO" \
+    "$OUTPUT" 2>/dev/null &
+
+FFMPEG_PID=$!
+
 while read -r line; do
     if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
         time=${line#*=}
@@ -160,15 +191,11 @@ while read -r line; do
         size_mib=$(echo "scale=2; $size / 1048576" | bc)
     fi
 
+    if [[ "$line" == "progress=end" ]]; then
+        break
+    fi
+
     echo -ne "Time: ${time}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
-done < <( "$BIN" -y -loglevel error \
-  -video_size "${W}x${H}" \
-  -framerate "$FPS" \
-  -f "$FMT" \
-  -i ":0.0+$X,$Y" \
-  -c:v "$VCODEC" \
-  -preset "$PRESET" \
-  -crf "$CRF" \
-  -pix_fmt "$PIXFMT" \
-  -progress pipe:1 \
-  "$OUTPUT" 2>&1 )
+done < "$FIFO"
+
+wait "$FFMPEG_PID"
