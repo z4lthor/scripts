@@ -11,6 +11,7 @@ CRF=25
 PRESET="veryfast"
 PIXFMT="yuv420p"
 FPS=30
+WINDOW=false
 FOCUS=false
 FFMPEG_PID=""
 FIFO=$(mktemp -u /tmp/record-screen_progress.XXXXXX)
@@ -24,6 +25,7 @@ $(basename "$0") [OPTION]... [OUTPUT]
 
 Options:
 -m, --monitor MONITOR       Record monitor MONITOR
+-w, --window                Record selected window
 -f, --focus                 Record focused window
 
 * The options --monitor and --focus are mutually exclusive.
@@ -82,8 +84,8 @@ if ! check_command $BIN; then
     exit 1
 fi
 
-OPTS=$(getopt -o m:fh \
-    --long monitor:,focus,help \
+OPTS=$(getopt -o m:wfh \
+    --long monitor:,window,focus,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -98,6 +100,10 @@ while true; do
         -m|--monitor)
             MONITOR="$2"
             shift 2
+            ;;
+        -w|--window)
+            WINDOW=true
+            shift
             ;;
         -f|--focus)
             FOCUS=true
@@ -120,7 +126,7 @@ done
 
 OUTPUT=${1:-screen_output_$(date +%Y-%m-%d_%H-%M-%S).mp4}
 
-if [[ -n "$MONITOR" && "$FOCUS" = "true" ]]; then
+if [[ -n "$MONITOR" ]] && [[ "$WINDOW" = "true" || "$FOCUS" = "true" ]]; then
     help
     exit 1
 fi
@@ -137,6 +143,9 @@ if [[ -n "$MONITOR" ]]; then
         echo "Error: Not found monitor $MONITOR" >&2
         exit 1
     fi
+elif [[ "$WINDOW" = "true" ]]; then
+    read -r X Y W H < <(xdotool selectwindow getwindowgeometry --shell | \
+        sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
 elif [[ "$FOCUS" = "true" ]]; then
     read -r X Y W H < <(xdotool getwindowfocus getwindowgeometry --shell | \
         sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
