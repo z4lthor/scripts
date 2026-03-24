@@ -27,6 +27,7 @@ Options:
 -m, --monitor MONITOR       Record monitor MONITOR
 -w, --window                Record selected window
 -f, --focus                 Record focused window
+-h, --help                  Show this help
 
 * The options --monitor and --focus are mutually exclusive.
 EOF
