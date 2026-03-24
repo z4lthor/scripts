@@ -27,6 +27,7 @@ Options:
 -m, --monitor MONITOR       Record monitor MONITOR
 -w, --window                Record selected window
 -f, --focus                 Record focused window
+-y, --yes                   Skip all prompts
 -h, --help                  Show this help
 
 * The options --monitor and --focus are mutually exclusive.
@@ -40,6 +41,8 @@ check_command() {
 }
 
 confirm_action() {
+    [[ -n "$SKIP_PROMPTS" && "$SKIP_PROMPTS" = "true" ]] && return 0;
+
     while true; do
         read -r -p "$1 [y/n]: " RESP
         case "$RESP" in
@@ -85,8 +88,8 @@ if ! check_command $BIN; then
     exit 1
 fi
 
-OPTS=$(getopt -o m:wfh \
-    --long monitor:,window,focus,help \
+OPTS=$(getopt -o m:wfyh \
+    --long monitor:,window,focus,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -108,6 +111,10 @@ while true; do
             ;;
         -f|--focus)
             FOCUS=true
+            shift
+            ;;
+        -y|--yes)
+            SKIP_PROMPTS=true
             shift
             ;;
         -h|--help)
