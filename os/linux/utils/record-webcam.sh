@@ -12,6 +12,10 @@ PIX_FORMAT="yuv420p"
 DEVICE="/dev/video0"
 OUTPUT="${1:-webcam_$(date +%Y%m%d_%H%M%S).mp4}"
 DURATION="${2:-0}"
+FFMPEG_PID=""
+FIFO=$(mktemp -u /tmp/record-screen_progress.XXXXXX)
+
+mkfifo "$FIFO"
 
 get_max_resolution() {
     local device="$1"
@@ -35,8 +39,19 @@ get_max_fps() {
 }
 
 finish() {
-    echo -e "\n\nRecording stopped by user."
-    echo "File saved to $OUTPUT"
+    echo -e "\n\nStopping recording..."
+
+    trap '' SIGINT
+
+    if [[ -n "$FFMPEG_PID" ]]; then
+        echo "Waiting for ffmpeg to finalize file..."
+
+        wait "$FFMPEG_PID" 2>/dev/null
+    fi
+
+    rm -f "$FIFO"
+
+    echo "File saved to $OUTPUT ($(du -sh "$OUTPUT" | awk '{print $1}'))"
     exit 0
 }
 
@@ -64,6 +79,19 @@ echo "Output: $OUTPUT"
 
 echo "Recording (ctrl+c to stop)..."
 
+"$BIN" -y -loglevel error \
+    -f v4l2 \
+    -framerate "$FPS" \
+    -video_size "$RES" \
+    -i "$DEVICE" \
+    $TIME \
+    -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
+    -pix_fmt "$PIX_FORMAT" \
+    -progress "$FIFO" \
+    "$OUTPUT" 2>/dev/null &
+
+FFMPEG_PID=$!
+
 while read -r line; do
     if [[ "$line" =~ out_time=([0-9:.]+) ]]; then
         time=${line#*=}
@@ -83,14 +111,11 @@ while read -r line; do
         size_mib=$(echo "scale=2; $size / 1048576" | bc)
     fi
 
+    if [[ "$line" == "progress=end" ]]; then
+        break
+    fi
+
     echo -ne "Time: ${time}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
-done < <( "$BIN" -y -loglevel error \
-    -f v4l2 \
-    -framerate "$FPS" \
-    -video_size "$RES" \
-    -i "$DEVICE" \
-    $TIME \
-    -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
-    -pix_fmt "$PIX_FORMAT" \
-    -progress pipe:1 \
-    "$OUTPUT" 2>&1 )
+done < "$FIFO"
+
+wait "$FFMPEG_PID"
