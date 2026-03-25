@@ -45,6 +45,11 @@ if [[ ! -e "$DEVICE" ]]; then
     exit 1
 fi
 
+if ! v4l2-ctl --device="$DEVICE" --all 2>/dev/null | grep -q "Video Capture"; then
+    echo "Error: $DEVICE not supports video capture."
+    exit 1
+fi
+
 RES=$(get_max_resolution "$DEVICE")
 FPS=$(get_max_fps "$DEVICE" "$RES")
 TIME=$([[ "$DURATION" -eq 0 ]] && echo "" || echo "-t $DURATION")
