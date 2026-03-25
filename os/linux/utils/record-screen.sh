@@ -64,7 +64,7 @@ finish() {
 
     trap '' SIGINT
 
-    if [[ -n "$ffmpeg_pid" ]]; then
+    if [[ -n "$FFMPEG_PID" ]]; then
         kill -SIGINT "$FFMPEG_PID" 2>/dev/null
 
         echo "Waiting for ffmpeg to finalize file..."
