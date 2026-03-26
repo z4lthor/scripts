@@ -21,6 +21,7 @@ Usage:
 $(basename "$0") [OPTION]... [OUTPUT] [DURATION]
 
 Options:
+-y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
 }
@@ -32,6 +33,8 @@ check_command() {
 }
 
 confirm_action() {
+    [[ -n "$SKIP_PROMPTS" && "$SKIP_PROMPTS" = "true" ]] && return 0;
+
     while true; do
         read -r -p "$1 [y/n]: " RESP
         case "$RESP" in
@@ -91,8 +94,8 @@ if ! check_command $BIN; then
     exit 1
 fi
 
-OPTS=$(getopt -o h \
-    --long help \
+OPTS=$(getopt -o yh \
+    --long yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -104,6 +107,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -y|--yes)
+            SKIP_PROMPTS=true
+            shift
+            ;;
         -h|--help)
             help
             exit 0
