@@ -31,6 +31,23 @@ check_command() {
     command -v "$bin" > /dev/null 2>&1
 }
 
+confirm_action() {
+    while true; do
+        read -r -p "$1 [y/n]: " RESP
+        case "$RESP" in
+            y|Y)
+                return 0
+                ;;
+            n|N)
+                return 1
+                ;;
+            *)
+                error "Invalid response. Try again."
+                ;;
+        esac
+    done
+}
+
 get_max_resolution() {
     local device="$1"
 
@@ -118,6 +135,11 @@ fi
 RES=$(get_max_resolution "$DEVICE")
 FPS=$(get_max_fps "$DEVICE" "$RES")
 TIME=$([[ "$DURATION" -eq 0 ]] && echo "" || echo "-t $DURATION")
+
+if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(basename "$OUTPUT")?"; then
+    echo "Recording aborted."
+    exit 0
+fi
 
 trap finish SIGINT
 
