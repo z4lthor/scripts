@@ -25,6 +25,12 @@ Options:
 EOF
 }
 
+check_command() {
+    local bin="$1"
+
+    command -v "$bin" > /dev/null 2>&1
+}
+
 get_max_resolution() {
     local device="$1"
 
@@ -62,6 +68,11 @@ finish() {
     echo "File saved to $OUTPUT ($(du -sh "$OUTPUT" | awk '{print $1}'))"
     exit 0
 }
+
+if ! check_command $BIN; then
+    echo "$BIN not found" >&2
+    exit 1
+fi
 
 OPTS=$(getopt -o h \
     --long help \
