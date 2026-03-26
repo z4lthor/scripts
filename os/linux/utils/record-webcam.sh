@@ -10,12 +10,20 @@ CRF=25
 PRESET="ultrafast"
 PIX_FORMAT="yuv420p"
 DEVICE="/dev/video0"
-OUTPUT="${1:-webcam_$(date +%Y%m%d_%H%M%S).mp4}"
-DURATION="${2:-0}"
 FFMPEG_PID=""
 FIFO=$(mktemp -u /tmp/record-screen_progress.XXXXXX)
 
 mkfifo "$FIFO"
+
+help() {
+cat <<EOF
+Usage:
+$(basename "$0") [OPTION]... [OUTPUT] [DURATION]
+
+Options:
+-h, --help                  Show this help
+EOF
+}
 
 get_max_resolution() {
     local device="$1"
@@ -54,6 +62,37 @@ finish() {
     echo "File saved to $OUTPUT ($(du -sh "$OUTPUT" | awk '{print $1}'))"
     exit 0
 }
+
+OPTS=$(getopt -o h \
+    --long help \
+    -n "$0" -- "$@")
+
+if [[ $? -ne 0 ]]; then
+    help
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -h|--help)
+            help
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            error "Internal getopt error"
+            exit 1
+            ;;
+    esac
+done
+
+OUTPUT=${1:-webcam_$(date +%Y-%m-%d_%H-%M-%S).mp4}
+DURATION="${2:-0}"
 
 if [[ ! -e "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found."
