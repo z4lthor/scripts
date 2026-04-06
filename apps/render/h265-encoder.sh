@@ -422,9 +422,27 @@ while read -r line; do
             percent=$(( time_sec * 100 / total ))
             (( percent > 100 )) && percent=100
 
-            echo -ne "Progress: [${percent}%] process ${time_sec}s of ${total}s\r"
         fi
     fi
+
+    if [[ "$line" =~ fps=([0-9.]+) ]]; then
+        fps=${line#*=}
+    fi
+
+    if [[ "$line" =~ bitrate=([0-9.]+) ]]; then
+        bitrate=${line#*=}
+    fi
+
+    if [[ "$line" =~ total_size=([0-9.]+) ]]; then
+        size=${line#*=}
+        size_mib=$(echo "scale=2; $size / 1048576" | bc)
+    fi
+
+    if [[ "$line" == "progress=end" ]]; then
+        break
+    fi
+
+    echo -ne "Encoding: ${percent}% Time: ${time_sec}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
 done < <( "$BIN" -y -loglevel error \
     "${POSITION_OPTS[@]}" \
     "${INPUT_OPTS[@]}" \
