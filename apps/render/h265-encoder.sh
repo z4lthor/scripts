@@ -17,8 +17,8 @@ ACODEC="aac"
 ABITRATE="128k"
 AFREQ="48000"
 ACHANNELS="2"
-FOURCC="-tag:v hvc1" # Codec ID: hev1 | hvc1
-MP4FLAGS="-movflags +faststart"
+FOURCC=(-tag:v hvc1) # Codec ID: hev1 | hvc1
+MP4FLAGS=(-movflags +faststart) # Relocates moov atom to beginning
 VOB_MODE=false
 
 RED="\e[31m"
@@ -88,7 +88,7 @@ parse_position() {
     local input="$1"
     local START END DURATION
 
-    ! is_position $input && return 1
+    ! is_position "$input" && return 1
 
     if [[ "$input" == *"+"* ]]; then
         START="${input%+*}"
@@ -142,7 +142,9 @@ all_vobs() {
 
 create_temporary_filelist() {
     local inputs=("$@")
-    local filelist=$(mktemp /tmp/filelist.XXXXXX)
+    local filelist
+
+    filelist=$(mktemp /tmp/filelist.XXXXXX) || return 1
 
     for input in "${inputs[@]}"; do
         printf "file '%s'\n" "$input" >> "$filelist"
@@ -317,8 +319,8 @@ if [[ -n "$POSITION" ]]; then
         exit 1
     fi
 
-    parsed_opts=$(parse_position $POSITION)
-    create_position_option POSITION_OPTS $parsed_opts
+    parsed_opts=$(parse_position "$POSITION")
+    create_position_option POSITION_OPTS "$parsed_opts"
 fi
 
 if [[ "$VOB_MODE" = "true" ]] && ! all_vobs "${INPUTS[@]}"; then
@@ -444,15 +446,15 @@ while read -r line; do
 
     echo -ne "Encoding: ${percent}% Time: ${time_sec}s FPS: ${fps} Bitrate: ${bitrate} Size: ${size_mib}MiB\r"
 done < <( "$BIN" -y -loglevel error \
-    "${POSITION_OPTS[@]}" \
-    "${INPUT_OPTS[@]}" \
-    -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
-    "${VIDEO_FILTER_OPTS[@]}" \
-    -c:a "$ACODEC" -b:a "$ABITRATE" -ar "$AFREQ" -ac "$ACHANNELS" \
-    $FOURCC \
-    $MP4FLAGS \
-    -progress pipe:1 \
-    "$OUTPUT" 2>&1 )
+            "${POSITION_OPTS[@]}" \
+            "${INPUT_OPTS[@]}" \
+            -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
+            "${VIDEO_FILTER_OPTS[@]}" \
+            -c:a "$ACODEC" -b:a "$ABITRATE" -ar "$AFREQ" -ac "$ACHANNELS" \
+            "${FOURCC[@]}" \
+            "${MP4FLAGS[@]}" \
+            -progress pipe:1 \
+            "$OUTPUT" 2>&1 )
 
 if [[ $? -eq 0 ]]; then
     info "Encoding completed successfully."
