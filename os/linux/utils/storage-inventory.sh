@@ -85,14 +85,21 @@ echo "File Hashes: $OUTPUT_HASHES"
 
 echo -n "Metadata file... "
 
-find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT_META"
+if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT_META"; then
+    echo "OK"
+else
+    echo "Failed"
+    exit 1
+fi
 
-echo "OK"
 
 echo -n "Hashes file... "
 
-find "$MOUNTPOINT" -xdev -type f -print0 | xargs -0 sha256sum > "$OUTPUT_HASHES"
-
-echo "OK"
+if find "$MOUNTPOINT" -xdev -type f -print0 | xargs -0 sha256sum > "$OUTPUT_HASHES"; then
+    echo "OK"
+else
+    echo "Failed"
+    exit 1
+fi
 
 exit 0
