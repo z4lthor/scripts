@@ -1,30 +1,29 @@
 #!/bin/bash
 #
-# Toogle a secondary monitor on and off
+# Toogle secondary monitor
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
 is_connected() {
-    local input=$1
-    xrandr --query | grep "connected" | grep -q "^$input"
+    local output=$1
+    xrandr --query | grep "connected" | grep -q "^$output"
 }
 
 is_active() {
-    local input=$1
-    xrandr --query | grep "^$input" | grep -qE "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+"
+    local output=$1
+    xrandr --query | grep "^$output" | grep -qE "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+"
 }
 
 if [[ $# -eq 0 ]]; then
-    echo "Usage: $(basename "$0") INPUT [POSITION]"
+    echo "Usage: $(basename "$0") OUTPUT [POSITION]"
     exit 1
 fi
 
-INPUT=$1
+OUTPUT=$1
 POSITION=$2
 
-# if ! xrandr --query | grep "connected" | grep -q "^$INPUT"; then
-if ! is_connected $INPUT; then
-    echo "Error: Input $INPUT not found or connected"
+if ! is_connected "$OUTPUT"; then
+    echo "Error: Output $OUTPUT not found or connected"
     exit 1
 fi
 
@@ -57,12 +56,12 @@ esac
 
 PRIMARY=$(xrandr --query | awk '/ primary / { print $1 }')
 
-if is_active $INPUT; then
-    echo "Turning off monitor on $INPUT"
-    xrandr --output $INPUT --off
+if is_active "$OUTPUT"; then
+    echo "Turning off monitor on $OUTPUT"
+    xrandr --output "$OUTPUT" --off
 else
-    echo "Turning on monitor on $INPUT"
-    xrandr --output $INPUT --auto $POSITION_OPT $PRIMARY
+    echo "Turning on monitor on $OUTPUT"
+    xrandr --output "$OUTPUT" --auto $POSITION_OPT "$PRIMARY"
 fi
 
 exit 0
