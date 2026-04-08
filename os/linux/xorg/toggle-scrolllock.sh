@@ -12,6 +12,11 @@ turnoff() {
     xset -led 3
 }
 
+if [[ -z "$DISPLAY" ]] || ! xset q >/dev/null 2>&1; then
+    echo "Error: X server is down or not available" >&2
+    exit 1
+fi
+
 ACTION="$1"
 
 if [[ -n "$ACTION" ]]; then
