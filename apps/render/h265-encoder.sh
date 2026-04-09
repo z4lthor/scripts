@@ -298,17 +298,18 @@ INPUTS=("${ARGS[@]}")
 OUTPUT=$(realpath -m "$OUTPUT")
 
 for i in "${!INPUTS[@]}"; do
-  INPUTS[$i]=$(realpath -m "${INPUTS[$i]}")
-done
+    absolute_input=$(realpath "${INPUTS[$i]}") 
 
-for input in "${INPUTS[@]}"; do
-    if [[ ! -f "$input" || "$input" == "$OUTPUT" ]]; then
-        error "Input file is invalid: $(basename "$input")"
+    if [[ ! -f "$absolute_input" || "$absolute_input" == "$OUTPUT" ]]; then
+        error "Input file is invalid or same as output: $(basename "$absolute_input")"
         exit 1
     fi
-    if is_vob "$input"; then
+
+    if is_vob "$absolute_input"; then
         VOB_MODE=true
     fi
+
+    INPUTS[$i]="$absolute_input"
 done
 
 POSITION_OPTS=()
