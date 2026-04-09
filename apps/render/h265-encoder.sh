@@ -354,6 +354,9 @@ if [[ "$CONCAT" = "true" ]]; then
     fi
 fi
 
+VIDEO_OPTS=(-c:v "$VCODEC" -crf "$CRF" -preset "$PRESET")
+AUDIO_OPTS=(-c:a "$ACODEC" -b:a "$ABITRATE" -ar "$AFREQ" -ac "$ACHANNELS")
+
 info "Starting H.265 encode…"
 info "CRF: $CRF"
 info "Preset: $PRESET"
@@ -449,9 +452,9 @@ while read -r line; do
 done < <( "$BIN" -y -loglevel error \
             "${POSITION_OPTS[@]}" \
             "${INPUT_OPTS[@]}" \
-            -c:v "$VCODEC" -crf "$CRF" -preset "$PRESET" \
+            "${VIDEO_OPTS[@]}" \
             "${VIDEO_FILTER_OPTS[@]}" \
-            -c:a "$ACODEC" -b:a "$ABITRATE" -ar "$AFREQ" -ac "$ACHANNELS" \
+            "${AUDIO_OPTS[@]}" \
             "${FOURCC[@]}" \
             "${MP4FLAGS[@]}" \
             -progress pipe:1 \
