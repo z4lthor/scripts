@@ -4,7 +4,7 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
-OPTS="󰐥 Poweroff\n󰜉 Restart\n󰤄 Suspend\n󰗽 Close Session"
+OPTS="󰐥 Poweroff\n󰜉 Restart\n󰤄 Suspend\n󰌾 Lock\n󰗽 Close Session"
 
 confirm() {
     echo -e "󰄬 Yes\n󰏐 No" | rofi -dmenu -i -p "Confirm $1?" \
@@ -23,6 +23,8 @@ case "$SELECTION" in
         [[ $(confirm "Restart") == *"Yes" ]] && systemctl reboot ;;
     *Suspend)
         systemctl suspend ;;
+    *Lock)
+        lock-screen ;;
     *Close*)
         [[ $(confirm "Close") == *"Yes" ]] && i3-msg exit ;;
 esac
