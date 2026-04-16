@@ -4,6 +4,7 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
+BIN=/usr/bin/scrot
 DSTDIR=$HOME/Pictures/Screenshots
 
 help() {
@@ -17,8 +18,19 @@ Options:
 EOF
 }
 
+check_command() {
+    local bin="$1"
+
+    command -v "$bin" > /dev/null 2>&1
+}
+
 if [[ -z "$DISPLAY" ]] || ! xset q >/dev/null 2>&1; then
     echo "Error: X server is down or not available" >&2
+    exit 1
+fi
+
+if ! check_command "$BIN"; then
+    echo "Error: $BIN not found" >&2
     exit 1
 fi
 
@@ -55,7 +67,7 @@ while true; do
 done
 
 if [[ ! -d "$DSTDIR" ]]; then
-    echo "Directory $DSTDIR does not exists."
+    echo "Error: Directory $DSTDIR does not exists."
     exit 1
 fi
 
@@ -66,7 +78,7 @@ fi
 
 OUTPUT=${1:-$DSTDIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png}
 
-if scrot -d 1 "$OUTPUT"; then
+if "$BIN" -d 1 "$OUTPUT"; then
     echo "$OUTPUT"
     exit 0
 else
