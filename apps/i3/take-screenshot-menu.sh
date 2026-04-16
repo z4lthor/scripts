@@ -7,7 +7,7 @@
 DEST_DIR=$HOME/Pictures/Screenshots
 ID=1001
 
-if FILE=$(take-screenshot "$DEST_DIR"); then
+if FILE=$(take-screenshot -d "$DEST_DIR"); then
     dunstify -r $ID \
              -a "Scrot" \
              -i "$FILE" \
