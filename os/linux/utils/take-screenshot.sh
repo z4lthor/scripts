@@ -14,6 +14,7 @@ $(basename "$0") [OPTION]... [OUTPUT]
 
 Options:
 -d, --directory DIRECTORY   Output file directory
+-y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
 }
@@ -25,6 +26,8 @@ check_command() {
 }
 
 confirm_action() {
+    [[ -n "$SKIP_PROMPTS" && "$SKIP_PROMPTS" = "true" ]] && return 0;
+
     while true; do
         read -r -p "$1 [y/n]: " RESP
         case "$RESP" in
@@ -51,8 +54,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:h \
-    --long directory:,help \
+OPTS=$(getopt -o d:yh \
+    --long directory:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -67,6 +70,10 @@ while true; do
         -d|--directory)
             DSTDIR="$2"
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_PROMPTS=true
+            shift
             ;;
         -h|--help)
             help
