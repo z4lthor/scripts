@@ -24,6 +24,23 @@ check_command() {
     command -v "$bin" > /dev/null 2>&1
 }
 
+confirm_action() {
+    while true; do
+        read -r -p "$1 [y/n]: " RESP
+        case "$RESP" in
+            y|Y)
+                return 0
+                ;;
+            n|N)
+                return 1
+                ;;
+            *)
+                error "Invalid response. Try again."
+                ;;
+        esac
+    done
+}
+
 if [[ -z "$DISPLAY" ]] || ! xset q >/dev/null 2>&1; then
     echo "Error: X server is down or not available" >&2
     exit 1
@@ -78,7 +95,11 @@ fi
 
 OUTPUT=${1:-$DSTDIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png}
 
-if "$BIN" -d 1 "$OUTPUT"; then
+if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(basename "$OUTPUT")?"; then
+    exit 0
+fi
+
+if "$BIN" -o -d 1 "$OUTPUT"; then
     echo "$OUTPUT"
     exit 0
 else
