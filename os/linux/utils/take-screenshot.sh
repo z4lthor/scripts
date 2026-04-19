@@ -6,6 +6,7 @@
 
 BIN=/usr/bin/scrot
 DSTDIR=$HOME/Pictures/Screenshots
+POSITION_OPTS=()
 
 help() {
 cat <<EOF
@@ -14,6 +15,7 @@ $(basename "$0") [OPTION]... [OUTPUT]
 
 Options:
 -d, --directory DIRECTORY   Output file directory
+-m, --monitor MONITOR       Screenshot to MONITOR
 -y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
@@ -54,8 +56,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:yh \
-    --long directory:,yes,help \
+OPTS=$(getopt -o d:m:yh \
+    --long directory:,monitor:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -69,6 +71,10 @@ while true; do
     case "$1" in
         -d|--directory)
             DSTDIR="$2"
+            shift 2
+            ;;
+        -m|--monitor)
+            MONITOR="$2"
             shift 2
             ;;
         -y|--yes)
@@ -106,7 +112,18 @@ if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(b
     exit 0
 fi
 
-if "$BIN" -o -d 1 "$OUTPUT"; then
+
+if [[ -n "$MONITOR" ]]; then
+    read -r W H X Y < <(xrandr --query | grep "^$MONITOR" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' ')
+
+    if [ -z "$W" ]; then
+        echo "Error: Not found monitor $MONITOR" >&2
+        exit 1
+    fi
+    POSITION_OPTS+=(-a "$X,$Y,$W,$H")
+fi
+
+if "$BIN" "${POSITION_OPTS[@]}" -o -d 1 "$OUTPUT"; then
     echo "$OUTPUT"
     exit 0
 else
