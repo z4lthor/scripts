@@ -8,6 +8,7 @@ BIN=/usr/bin/scrot
 DSTDIR=$HOME/Pictures/Screenshots
 POSITION_OPTS=()
 WINDOW=false
+FOCUS=false
 SELECT=false
 
 help() {
@@ -19,6 +20,7 @@ Options:
 -d, --directory DIRECTORY   Output file directory
 -m, --monitor MONITOR       Screenshot to MONITOR
 -w, --window                Screenshot to window
+-f, --focus                 Screenshot to focused window
 -s, --select                Screenshot to selection 
 -y, --yes                   Skip all prompts
 -h, --help                  Show this help
@@ -60,8 +62,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:m:wsyh \
-    --long directory:,monitor:,window,select,yes,help \
+OPTS=$(getopt -o d:m:wfsyh \
+    --long directory:,monitor:,window,focus,select,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -83,6 +85,10 @@ while true; do
             ;;
         -w|--window)
             WINDOW=true
+            shift
+            ;;
+        -f|--focus)
+            FOCUS=true
             shift
             ;;
         -s|--select)
@@ -134,6 +140,9 @@ if [[ -n "$MONITOR" ]]; then
     fi
 elif [[ "$WINDOW" = "true" ]]; then
     read -r X Y W H < <(xdotool selectwindow getwindowgeometry --shell | \
+        sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
+elif [[ "$FOCUS" = "true" ]]; then
+    read -r X Y W H < <(xdotool getwindowfocus getwindowgeometry --shell | \
         sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
 fi
 
