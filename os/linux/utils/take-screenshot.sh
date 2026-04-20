@@ -5,7 +5,7 @@
 #
 
 BIN=/usr/bin/scrot
-DSTDIR=$HOME/Pictures/Screenshots
+DSTDIR="."
 POSITION_OPTS=()
 WINDOW=false
 FOCUS=false
