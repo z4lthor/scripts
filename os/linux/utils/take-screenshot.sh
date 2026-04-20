@@ -8,6 +8,7 @@ BIN=/usr/bin/scrot
 DSTDIR=$HOME/Pictures/Screenshots
 POSITION_OPTS=()
 WINDOW=false
+SELECT=false
 
 help() {
 cat <<EOF
@@ -18,6 +19,7 @@ Options:
 -d, --directory DIRECTORY   Output file directory
 -m, --monitor MONITOR       Screenshot to MONITOR
 -w, --window                Screenshot to window
+-s, --select                Screenshot to selection 
 -y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
@@ -58,8 +60,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:m:wyh \
-    --long directory:,monitor:,window,yes,help \
+OPTS=$(getopt -o d:m:wsyh \
+    --long directory:,monitor:,window,select,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -81,6 +83,10 @@ while true; do
             ;;
         -w|--window)
             WINDOW=true
+            shift
+            ;;
+        -s|--select)
+            SELECT=true
             shift
             ;;
         -y|--yes)
@@ -133,6 +139,8 @@ fi
 
 if [[ -n "$W" ]]; then
     POSITION_OPTS+=(-a "$X,$Y,$W,$H")
+elif [[ "$SELECT" = "true" ]]; then
+    POSITION_OPTS+=(-s)
 fi
 
 if "$BIN" "${POSITION_OPTS[@]}" -o -d 1 "$OUTPUT"; then
