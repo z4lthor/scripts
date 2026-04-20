@@ -7,6 +7,7 @@
 BIN=/usr/bin/scrot
 DSTDIR=$HOME/Pictures/Screenshots
 POSITION_OPTS=()
+WINDOW=false
 
 help() {
 cat <<EOF
@@ -16,6 +17,7 @@ $(basename "$0") [OPTION]... [OUTPUT]
 Options:
 -d, --directory DIRECTORY   Output file directory
 -m, --monitor MONITOR       Screenshot to MONITOR
+-w, --window                Screenshot to window
 -y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
@@ -56,8 +58,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:m:yh \
-    --long directory:,monitor:,yes,help \
+OPTS=$(getopt -o d:m:wyh \
+    --long directory:,monitor:,window,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -76,6 +78,10 @@ while true; do
         -m|--monitor)
             MONITOR="$2"
             shift 2
+            ;;
+        -w|--window)
+            WINDOW=true
+            shift
             ;;
         -y|--yes)
             SKIP_PROMPTS=true
@@ -116,10 +122,16 @@ fi
 if [[ -n "$MONITOR" ]]; then
     read -r W H X Y < <(xrandr --query | grep "^$MONITOR" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' ')
 
-    if [ -z "$W" ]; then
+    if [[ -z "$W" ]]; then
         echo "Error: Not found monitor $MONITOR" >&2
         exit 1
     fi
+elif [[ "$WINDOW" = "true" ]]; then
+    read -r X Y W H < <(xdotool selectwindow getwindowgeometry --shell | \
+        sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
+fi
+
+if [[ -n "$W" ]]; then
     POSITION_OPTS+=(-a "$X,$Y,$W,$H")
 fi
 
