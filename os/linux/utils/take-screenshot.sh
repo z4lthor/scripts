@@ -10,6 +10,7 @@ POSITION_OPTS=()
 WINDOW=false
 FOCUS=false
 SELECT=false
+DELAY=1
 
 help() {
 cat <<EOF
@@ -130,7 +131,6 @@ if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(b
     exit 0
 fi
 
-
 if [[ -n "$MONITOR" ]]; then
     read -r W H X Y < <(xrandr --query | grep "^$MONITOR" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' ')
 
@@ -152,7 +152,7 @@ elif [[ "$SELECT" = "true" ]]; then
     POSITION_OPTS+=(-s)
 fi
 
-if "$BIN" "${POSITION_OPTS[@]}" -o -d 1 "$OUTPUT"; then
+if "$BIN" "${POSITION_OPTS[@]}" -o -d "$DELAY" "$OUTPUT"; then
     echo "$OUTPUT"
     exit 0
 else
