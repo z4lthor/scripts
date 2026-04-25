@@ -10,7 +10,7 @@ POSITION_OPTS=()
 WINDOW=false
 FOCUS=false
 SELECT=false
-DELAY=1
+TIME=1
 
 help() {
 cat <<EOF
@@ -22,7 +22,8 @@ Options:
 -m, --monitor MONITOR       Screenshot to MONITOR
 -w, --window                Screenshot to window
 -f, --focus                 Screenshot to focused window
--s, --select                Screenshot to selection 
+-s, --select                Screenshot to selection
+-t, --time SECONDS          Seconds to wait
 -y, --yes                   Skip all prompts
 -h, --help                  Show this help
 EOF
@@ -53,6 +54,12 @@ confirm_action() {
     done
 }
 
+is_number() {
+    local num=$1
+
+    [[ "$num" =~ ^[0-9]+$ ]]
+}
+
 if [[ -z "$DISPLAY" ]] || ! xset q >/dev/null 2>&1; then
     echo "Error: X server is down or not available" >&2
     exit 1
@@ -63,8 +70,8 @@ if ! check_command "$BIN"; then
     exit 1
 fi
 
-OPTS=$(getopt -o d:m:wfsyh \
-    --long directory:,monitor:,window,focus,select,yes,help \
+OPTS=$(getopt -o d:m:wfst:yh \
+    --long directory:,monitor:,window,focus,select,time:,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -95,6 +102,10 @@ while true; do
         -s|--select)
             SELECT=true
             shift
+            ;;
+        -t|--time)
+            TIME="$2"
+            shift 2
             ;;
         -y|--yes)
             SKIP_PROMPTS=true
@@ -152,7 +163,12 @@ elif [[ "$SELECT" = "true" ]]; then
     POSITION_OPTS+=(-s)
 fi
 
-if "$BIN" "${POSITION_OPTS[@]}" -o -d "$DELAY" "$OUTPUT"; then
+if ! is_number "$TIME"; then
+    echo "Error: Time in seconds must be a number"
+    exit 1
+fi
+
+if "$BIN" "${POSITION_OPTS[@]}" -o -d "$TIME" "$OUTPUT"; then
     echo "$OUTPUT"
     exit 0
 else
