@@ -5,7 +5,6 @@
 #
 
 BIN=/usr/bin/scrot
-DSTDIR="."
 POSITION_OPTS=()
 WINDOW=false
 FOCUS=false
@@ -18,7 +17,6 @@ Usage:
 $(basename "$0") [OPTION]... [OUTPUT]
 
 Options:
--d, --directory DIRECTORY   Output file directory
 -m, --monitor MONITOR       Screenshot to MONITOR
 -w, --window                Screenshot to window
 -f, --focus                 Screenshot to focused window
@@ -83,10 +81,6 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
-        -d|--directory)
-            DSTDIR="$2"
-            shift 2
-            ;;
         -m|--monitor)
             MONITOR="$2"
             shift 2
@@ -126,17 +120,7 @@ while true; do
     esac
 done
 
-if [[ ! -d "$DSTDIR" ]]; then
-    echo "Error: Directory $DSTDIR does not exists."
-    exit 1
-fi
-
-if [[ ! -w "$DSTDIR" ]]; then
-    echo "Error: Directory $DSTDIR is not writable" >&2
-    exit 1
-fi
-
-OUTPUT=${1:-$DSTDIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png}
+OUTPUT=${1:-screenshot_$(date +%Y-%m-%d_%H-%M-%S).png}
 
 if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(basename "$OUTPUT")?"; then
     exit 0
