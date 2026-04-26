@@ -6,6 +6,7 @@
 
 ID=1001
 DSTDIR=${XDG_PICTURES_DIR:-$HOME/Pictures/Screenshots}
+MODE_OPTS=(-y -t 2)
 OPTS="󰍹 Monitor\n󱣴 Window\n󰩬 Selection"
 STYLE=("-hide-scrollbar" \
        "-theme-str" "window {width: 15%;} listview {lines: 3;}" \
@@ -45,20 +46,20 @@ case "$SELECTION" in
         [[ -z "$SELECTED" ]] && exit 0
 
         if [[ "$SELECTED" == "All" ]]; then
-            take-screenshot -y "$OUTPUT"
+            MODE_OPTS+=()
         else
-            take-screenshot -y -m "$SELECTED" "$OUTPUT"
+            MODE_OPTS+=(-m "$SELECTED")
         fi
         ;;
     *Window)
-        take-screenshot -y -w "$OUTPUT"
+        MODE_OPTS+=(-w)
         ;;
     *Selection)
-        take-screenshot -y -s "$OUTPUT"
+        MODE_OPTS+=(-s)
         ;;
 esac
 
-if [[ -f "$OUTPUT" ]]; then
+if take-screenshot "${MODE_OPTS[@]}" "$OUTPUT"; then
     dunstify -r $ID \
     -a "Scrot" \
     -i "$OUTPUT" \
