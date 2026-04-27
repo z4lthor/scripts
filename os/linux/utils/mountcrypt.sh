@@ -18,7 +18,8 @@ Usage:
 $(basename "$0") [options] <DEVICE> <MOUNT_POINT>
 
 Options:
--h, --help                Show this help
+-k, --key KEYFILE       Open device using a key file
+-h, --help              Show this help
 EOF
 }
 
@@ -44,8 +45,8 @@ if ! command -v $BIN > /dev/null 2>&1; then
     exit 1
 fi
 
-OPTS=$(getopt -o h \
-    --long help \
+OPTS=$(getopt -o k:h \
+    --long key:,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -57,6 +58,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -k|--key)
+            KEYFILE="$2"
+            shift 2
+            ;;
         -h|--help)
             help
             exit 0
@@ -103,7 +108,18 @@ if [[ -e /dev/mapper/$NAME ]]; then
     exit 1
 fi
 
-$BIN luksOpen $DEVICE $NAME
+OPTS=()
+
+if [[ -n "$KEYFILE" ]]; then
+    if [[ ! -f "$KEYFILE" ]]; then
+        error "Key file $KEYFILE not found"
+        exit 1
+    fi
+
+    OPTS+=(--key-file "$KEYFILE")
+fi
+
+$BIN luksOpen $DEVICE $NAME "${OPTS[@]}"
 
 if [[ $? -eq 0 ]]; then
     info "LUKS $DEVICE opened on /dev/mapper/$NAME"
