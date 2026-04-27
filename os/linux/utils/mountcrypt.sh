@@ -36,7 +36,7 @@ warn() {
 }
 
 if [[ $EUID -ne 0 ]]; then
-    error "Error: You must be root"
+    error "You must be root"
     exit 1
 fi
 
@@ -119,22 +119,18 @@ if [[ -n "$KEYFILE" ]]; then
     OPTS+=(--key-file "$KEYFILE")
 fi
 
-$BIN luksOpen $DEVICE $NAME "${OPTS[@]}"
-
-if [[ $? -eq 0 ]]; then
+if $BIN luksOpen "$DEVICE" "$NAME" "${OPTS[@]}"; then
     info "LUKS $DEVICE opened on /dev/mapper/$NAME"
 else
     error "Cannot open LUKS"
     exit 1
 fi
 
-mount /dev/mapper/$NAME $MOUNT
-
-if [[ $? -eq 0 ]]; then
+if mount "/dev/mapper/$NAME" "$MOUNT"; then
     info "LUKS /dev/mapper/$NAME mounted on $MOUNT"
 else
     error "Cannot mount LUKS"
-    $BIN luksClose $NAME
+    $BIN luksClose "$NAME"
     exit 1
 fi
 
