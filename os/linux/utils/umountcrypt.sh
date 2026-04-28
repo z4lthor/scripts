@@ -27,7 +27,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ ! -x "$BIN" ]]; then
+if ! command -v $BIN > /dev/null 2>&1; then
     error "$BIN not found"
     exit 1
 fi
