@@ -8,6 +8,7 @@ BIN=/usr/bin/cryptsetup
 MAPPING_SUFFIX="crypt"
 TIMEOUT=30
 CRYPTSETUP_OPTS=(-t "$TIMEOUT")
+OPEN_ONLY=false
 
 RED="\e[31m"
 GREEN="\e[32m"
@@ -21,6 +22,7 @@ $(basename "$0") [options] <DEVICE> <MOUNT_POINT>
 
 Options:
 -k, --key KEYFILE       Open device using a key file
+-o, --open-only         Opens LUKS volume without mounting
 -h, --help              Show this help
 EOF
 }
@@ -47,8 +49,8 @@ if ! command -v $BIN > /dev/null 2>&1; then
     exit 1
 fi
 
-OPTS=$(getopt -o k:h \
-    --long key:,help \
+OPTS=$(getopt -o k:oh \
+    --long key:,open-only,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -63,6 +65,10 @@ while true; do
         -k|--key)
             KEYFILE="$2"
             shift 2
+            ;;
+        -o|--open-only)
+            OPEN_ONLY=true
+            shift
             ;;
         -h|--help)
             help
@@ -125,6 +131,10 @@ if $BIN luksOpen "$DEVICE" "$NAME" "${CRYPTSETUP_OPTS[@]}"; then
 else
     error "Cannot open LUKS"
     exit 1
+fi
+
+if [[ "$OPEN_ONLY" = "true" ]]; then
+    exit 0
 fi
 
 if mount "/dev/mapper/$NAME" "$MOUNT"; then
