@@ -6,6 +6,8 @@
 
 BIN=/usr/bin/cryptsetup
 MAPPING_SUFFIX="crypt"
+TIMEOUT=30
+CRYPTSETUP_OPTS=(-t "$TIMEOUT")
 
 RED="\e[31m"
 GREEN="\e[32m"
@@ -108,7 +110,6 @@ if [[ -e /dev/mapper/$NAME ]]; then
     exit 1
 fi
 
-OPTS=()
 
 if [[ -n "$KEYFILE" ]]; then
     if [[ ! -f "$KEYFILE" ]]; then
@@ -116,10 +117,10 @@ if [[ -n "$KEYFILE" ]]; then
         exit 1
     fi
 
-    OPTS+=(--key-file "$KEYFILE")
+    CRYPTSETUP_OPTS+=(--key-file "$KEYFILE")
 fi
 
-if $BIN luksOpen "$DEVICE" "$NAME" "${OPTS[@]}"; then
+if $BIN luksOpen "$DEVICE" "$NAME" "${CRYPTSETUP_OPTS[@]}"; then
     info "LUKS $DEVICE opened on /dev/mapper/$NAME"
 else
     error "Cannot open LUKS"
