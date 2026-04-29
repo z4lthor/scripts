@@ -27,6 +27,23 @@ Options:
 EOF
 }
 
+confirm_action() {
+    while true; do
+        read -r -p "$1 [y/n]: " RESP
+        case "$RESP" in
+            y|Y)
+                return 0
+                ;;
+            n|N)
+                return 1
+                ;;
+            *)
+                error "Invalid response. Try again."
+                ;;
+        esac
+    done
+}
+
 error() {
     echo -e "${RED}[ERROR]${RESET} $1" >&2
 }
@@ -112,8 +129,25 @@ fi
 NAME="$(basename "$DEVICE")_$MAPPING_SUFFIX"
 
 if [[ -e /dev/mapper/$NAME ]]; then
-    error "Device $DEVICE is already opened"
-    exit 1
+    if ! confirm_action "Device $DEVICE is already opened. Do yo want to reopen?"; then
+        exit 1
+    fi
+
+    if mountpoint -q "$MOUNT"; then
+        if umount "$MOUNT"; then
+            info "Mount point $MOUNT unmounted successfully."
+        else
+            error "Failed to unmount $MOUNT. Check if files are still in use."
+            exit 1
+        fi
+    fi
+
+    if $BIN luksClose "$NAME"; then
+        info "LUKS container [$NAME] closed successfully."
+    else
+        error "Failed to close LUKS container $NAME."
+        exit 1
+    fi
 fi
 
 
