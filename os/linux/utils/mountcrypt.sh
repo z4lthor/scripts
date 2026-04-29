@@ -18,16 +18,19 @@ RESET="\e[0m"
 help() {
 cat <<EOF
 Usage:
-$(basename "$0") [options] <DEVICE> <MOUNT_POINT>
+$(basename "$0") [options] DEVICE MOUNT_POINT
 
 Options:
 -k, --key KEYFILE       Open device using a key file
 -o, --open-only         Opens LUKS volume without mounting
+-y, --yes               Skip all prompts
 -h, --help              Show this help
 EOF
 }
 
 confirm_action() {
+    [[ -n "$SKIP_PROMPTS" && "$SKIP_PROMPTS" = "true" ]] && return 0;
+
     while true; do
         read -r -p "$1 [y/n]: " RESP
         case "$RESP" in
@@ -66,8 +69,8 @@ if ! command -v $BIN > /dev/null 2>&1; then
     exit 1
 fi
 
-OPTS=$(getopt -o k:oh \
-    --long key:,open-only,help \
+OPTS=$(getopt -o k:oyh \
+    --long key:,open-only,yes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -85,6 +88,10 @@ while true; do
             ;;
         -o|--open-only)
             OPEN_ONLY=true
+            shift
+            ;;
+        -y|--yes)
+            SKIP_PROMPTS=true
             shift
             ;;
         -h|--help)
