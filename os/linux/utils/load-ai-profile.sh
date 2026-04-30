@@ -13,6 +13,11 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
+if [[ ! -d "$BASEDIR" ]]; then
+    echo "Error: $BASEDIR not found"
+    exit 1
+fi
+
 if [[ ! -f "$LOADER" ]]; then
     echo "Error: $(basename "$LOADER") not found in $BASEDIR"
     exit 1
