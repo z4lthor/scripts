@@ -30,7 +30,7 @@ if [[ ! -f "$AGENT" ]]; then
     exit 1
 fi
 
-(cat "$LOADER"; echo -e "\n---\n"; cat "$AGENT") | \
+(cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT") | \
     sed 's/[[:space:]]*#.*//; /^[[:space:]]*$/d' | \
     xclip -sel clip
 
