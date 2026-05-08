@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SRC_DIR=${1-}
+SRC_DIR=${1:-}
 DEST_DIR="$HOME/.local/bin"
 
 if [[ -z "$SRC_DIR" ]]; then
@@ -36,7 +36,7 @@ conflicts=0
 echo "Syncing scripts from $SRC_DIR ..."
 
 while IFS= read -r -d '' script; do
-    ((total++)) || true
+    ((total++)) || :
 
     name=$(basename "$script")
     name_no_ext="${name%.*}"
