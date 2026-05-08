@@ -52,11 +52,13 @@ while IFS= read -r -d '' script; do
         fi
     fi
 
-    if [ -L "$link" ] || [ -e "$link" ]; then
+    if [[ -L "$link" ]] || [[ -e "$link" ]]; then
         if [ "$(readlink -f "$link" 2>/dev/null || echo '')" == "$script" ]; then
+            echo "Skipping: $link already exists and points to $script"
+            ((skipped++)) || :
             continue
         fi
-        echo "Conflict: $name already exists and points elsewhere" >&2
+        echo "Conflict: $link already exists and points elsewhere"
         ((conflicts++)) || :
         continue
     fi
