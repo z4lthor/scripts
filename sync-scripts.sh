@@ -39,8 +39,7 @@ while IFS= read -r -d '' script; do
     ((total++)) || :
 
     name=$(basename "$script")
-    name_no_ext="${name%.*}"
-    link="$DEST_DIR/${name_no_ext}"
+    link="$DEST_DIR/${name%.sh}"
 
     if [[ ! -x "$script" ]]; then
         if chmod +x "$script" 2>/dev/null; then
