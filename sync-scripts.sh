@@ -12,7 +12,7 @@ if [[ -z "$SRC_DIR" ]]; then
     exit 1
 fi
 
-SRC_DIR=$(realpath -m "$1")
+SRC_DIR=$(realpath -m "$SRC_DIR")
 
 if [[ ! -d "$SRC_DIR" ]]; then
     echo "Error: Source directory $SRC_DIR doesn't exist" >&2
@@ -73,4 +73,4 @@ while IFS= read -r -d '' script; do
 
 done < <(find "$SRC_DIR" -type f -not -path "*/.*" \( -executable -o -name "*.sh" \) -print0)
 
-echo "Summary: Total $total | Created $created | Skipped: $skipped | Conflicts $conflicts"
+echo "Summary: Total $total | Created $created | Skipped $skipped | Conflicts $conflicts"
