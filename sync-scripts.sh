@@ -42,13 +42,9 @@ while IFS= read -r -d '' script; do
     link="$DEST_DIR/${name%.sh}"
 
     if [[ ! -x "$script" ]]; then
-        if chmod +x "$script" 2>/dev/null; then
-            echo "Made executable: $name"
-        else
-            echo "Warning: Cannot make '$name' executable, skipping" >&2
-            ((skipped++)) || :
-            continue
-        fi
+        echo "Skipping: $name is not executable" >&2
+        ((skipped++)) || :
+        continue
     fi
 
     if [[ -L "$link" ]] || [[ -e "$link" ]]; then
