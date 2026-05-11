@@ -43,7 +43,7 @@ if ! check_command "$XCLIP_BIN"; then
 fi
 
 (cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT") | \
-    sed 's/[[:space:]]*#.*//; /^[[:space:]]*$/d' | \
+    sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' | \
     xclip -sel clip
 
 echo "Profile [$PROFILE] loaded and sanitized to clipboard."
