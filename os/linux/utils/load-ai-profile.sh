@@ -5,6 +5,7 @@
 #
 
 XCLIP_BIN=/usr/bin/xclip
+WL_COPY_BIN=/usr/bin/wl-copy
 BASEDIR="$HOME/.config/ai"
 LOADER="$BASEDIR/loader.txt"
 PROFILE="$1"
@@ -13,6 +14,16 @@ check_command() {
     local bin="$1"
 
     command -v "$bin" > /dev/null 2>&1
+}
+
+copy() {
+    if check_command "$WL_COPY_BIN"; then
+        "$WL_COPY_BIN"
+    elif check_command "$XCLIP_BIN"; then
+        "$XCLIP_BIN" -sel clip
+    else
+        cat
+    fi
 }
 
 if [[ $# -eq 0 ]]; then
@@ -43,8 +54,8 @@ if ! check_command "$XCLIP_BIN"; then
 fi
 
 (cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT") | \
-    sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' | \
-    xclip -sel clip
+sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' | \
+copy
 
 echo "Profile [$PROFILE] loaded and sanitized to clipboard."
 
