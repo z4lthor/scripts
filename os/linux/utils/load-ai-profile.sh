@@ -59,11 +59,6 @@ if ! validate "$AGENT"; then
     exit 1
 fi
 
-if ! check_command "$XCLIP_BIN"; then
-    echo "Error: xclip not found"
-    exit 1
-fi
-
 (cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT") | \
 sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' | \
 copy
