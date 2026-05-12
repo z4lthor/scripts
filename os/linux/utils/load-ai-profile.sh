@@ -26,6 +26,12 @@ copy() {
     fi
 }
 
+validate() {
+    local profile="$1"
+
+    yq '.' "$profile" > /dev/null 2>&1
+}
+
 if [[ $# -eq 0 ]]; then
     echo "Usage: $(basename "$0") PROFILE"
     exit 1
@@ -45,6 +51,11 @@ AGENT="$BASEDIR/profiles/$PROFILE.yaml"
 
 if [[ ! -f "$AGENT" ]]; then
     echo "Error: Profile '$PROFILE.yaml' not found in $BASEDIR/profiles/"
+    exit 1
+fi
+
+if ! validate "$AGENT"; then
+    echo "Error: Invalid profile $PROFILE.yaml"
     exit 1
 fi
 
