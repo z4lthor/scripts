@@ -8,6 +8,7 @@ XCLIP_BIN=/usr/bin/xclip
 WL_COPY_BIN=/usr/bin/wl-copy
 BASEDIR="$HOME/.config/ai"
 LOADER="$BASEDIR/loader.txt"
+CLIPBOARD=false
 SKIP_VALIDATION=false
 
 help() {
@@ -17,6 +18,7 @@ $(basename "$0") [options] PROFILE
 
 Options:
 -s, --skip-validation   Skip YAML profile validation
+-c, --clipboard         Copy profile to clipboard
 -h, --help              Show this help
 EOF
 }
@@ -43,8 +45,8 @@ validate() {
     yq '.' "$profile" > /dev/null 2>&1
 }
 
-OPTS=$(getopt -o sh \
-    --long skip-validation,help \
+OPTS=$(getopt -o csh \
+    --long clipboard,skip-validation,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -56,6 +58,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -c|--clipboard)
+            CLIPBOARD=true
+            shift
+            ;;
         -s|--skip-validation)
             SKIP_VALIDATION=true
             shift
@@ -104,10 +110,13 @@ if [[ "$SKIP_VALIDATION" = "false" ]] && ! validate "$AGENT"; then
     exit 1
 fi
 
-(cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT") | \
-sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' | \
-copy
+RESULT=$(cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT" | sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d')
 
-echo "Profile [$PROFILE] loaded and sanitized to clipboard."
+if [[ "$CLIPBOARD" = "true" ]]; then
+    echo "$RESULT" | copy
+    echo "Profile [$PROFILE] loaded and sanitized to clipboard."
+else
+    echo "$RESULT"
+fi
 
 exit 0
