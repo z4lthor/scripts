@@ -8,7 +8,16 @@ XCLIP_BIN=/usr/bin/xclip
 WL_COPY_BIN=/usr/bin/wl-copy
 BASEDIR="$HOME/.config/ai"
 LOADER="$BASEDIR/loader.txt"
-PROFILE="$1"
+
+help() {
+cat <<EOF
+Usage:
+$(basename "$0") [options] PROFILE
+
+Options:
+-h, --help              Show this help
+EOF
+}
 
 check_command() {
     local bin="$1"
@@ -32,7 +41,37 @@ validate() {
     yq '.' "$profile" > /dev/null 2>&1
 }
 
-if [[ $# -eq 0 ]]; then
+OPTS=$(getopt -o h \
+    --long help \
+    -n "$0" -- "$@")
+
+if [[ $? -ne 0 ]]; then
+    help
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -h|--help)
+            help
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Internal getopt error"
+            exit 1
+            ;;
+    esac
+done
+
+PROFILE="$1"
+
+if [[ -z "$PROFILE" ]]; then
     echo "Usage: $(basename "$0") PROFILE"
     exit 1
 fi
