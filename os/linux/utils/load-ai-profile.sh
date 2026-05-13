@@ -8,6 +8,7 @@ XCLIP_BIN=/usr/bin/xclip
 WL_COPY_BIN=/usr/bin/wl-copy
 BASEDIR="$HOME/.config/ai"
 LOADER="$BASEDIR/loader.txt"
+SKIP_VALIDATION=false
 
 help() {
 cat <<EOF
@@ -15,6 +16,7 @@ Usage:
 $(basename "$0") [options] PROFILE
 
 Options:
+-s, --skip-validation   Skip YAML profile validation
 -h, --help              Show this help
 EOF
 }
@@ -41,8 +43,8 @@ validate() {
     yq '.' "$profile" > /dev/null 2>&1
 }
 
-OPTS=$(getopt -o h \
-    --long help \
+OPTS=$(getopt -o sh \
+    --long skip-validation,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -54,6 +56,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -s|--skip-validation)
+            SKIP_VALIDATION=true
+            shift
+            ;;
         -h|--help)
             help
             exit 0
@@ -93,7 +99,7 @@ if [[ ! -f "$AGENT" ]]; then
     exit 1
 fi
 
-if ! validate "$AGENT"; then
+if [[ "$SKIP_VALIDATION" = "false" ]] && ! validate "$AGENT"; then
     echo "Error: Invalid profile $PROFILE.yaml"
     exit 1
 fi
