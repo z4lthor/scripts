@@ -29,6 +29,13 @@ check_command() {
     command -v "$bin" > /dev/null 2>&1
 }
 
+generate_content() {
+    local agent="$1"
+    cat "$LOADER"
+    printf "\n---\n\n"
+    cat "$agent" | sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d'
+}
+
 copy() {
     if check_command "$WL_COPY_BIN"; then
         "$WL_COPY_BIN"
@@ -110,7 +117,7 @@ if [[ "$SKIP_VALIDATION" = "false" ]] && ! validate "$AGENT"; then
     exit 1
 fi
 
-RESULT=$(cat "$LOADER"; printf "\n---\n\n"; cat "$AGENT" | sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d')
+RESULT=$(generate_content "$AGENT")
 
 if [[ "$CLIPBOARD" = "true" ]]; then
     echo "$RESULT" | copy
