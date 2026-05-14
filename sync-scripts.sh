@@ -7,6 +7,12 @@ set -euo pipefail
 SRC_DIR=${1:-}
 DEST_DIR="$HOME/.local/bin"
 
+check_shebang() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+    [[ "$(head -n 1 "$file" 2>/dev/null)" =~ ^#! ]]
+}
+
 if [[ -z "$SRC_DIR" ]]; then
     echo "Usage: $(basename "$0") SOURCE"
     exit 1
@@ -43,6 +49,12 @@ while IFS= read -r -d '' script; do
 
     if [[ ! -x "$script" ]]; then
         echo "Skipping: $name is not executable" >&2
+        ((skipped++)) || :
+        continue
+    fi
+
+    if ! check_shebang "$script"; then
+        echo "Skipping: $name missing or not using interpreter" >&2
         ((skipped++)) || :
         continue
     fi
