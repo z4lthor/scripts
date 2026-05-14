@@ -60,14 +60,24 @@ while IFS= read -r -d '' script; do
     fi
 
     if [[ -L "$link" ]] || [[ -e "$link" ]]; then
-        if [ "$(readlink -f "$link" 2>/dev/null || echo '')" == "$script" ]; then
-            echo "Skipping: $link already exists and points to $script"
-            ((skipped++)) || :
+        target_path=$(readlink -f "$link" 2>/dev/null)
+        exit_code=$?
+
+        if [[ $exit_code -ne 0 ]] || [[ -z "$target_path" ]]; then
+            echo "Warning: $link is a broken symlink or trapped in a loop" >&2
+            ((conflicts++)) || :
             continue
         fi
-        echo "Conflict: $link already exists and points elsewhere"
-        ((conflicts++)) || :
-        continue
+
+        if [[ "$target_path" == "$script" ]]; then
+            echo "Skipping: $link already exists and points to $script" >&2
+            ((skipped++)) || :
+            continue
+        else
+            echo "Conflict: $link already exists and points elsewhere ($target_path)" >&2
+            ((conflicts++)) || :
+            continue
+        fi
     fi
 
     if ln -s "$script" "$link" 2>/dev/null; then
