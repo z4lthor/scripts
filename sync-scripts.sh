@@ -88,6 +88,6 @@ while IFS= read -r -d '' script; do
         ((conflicts++)) || :
     fi
 
-done < <(find "$SRC_DIR" -type f -not -path "*/.*" \( -executable -o -name "*.sh" \) -print0)
+done < <(find "$SRC_DIR" -type f -not -path "*/.*" \( -executable -o \( -name "*.sh" -a -readable \) \) -print0)
 
 echo "Summary: Total $total | Created $created | Skipped $skipped | Conflicts $conflicts"
