@@ -18,6 +18,21 @@ check_shebang() {
     [[ "$(head -n 1 "$file" 2>/dev/null)" =~ ^#! ]]
 }
 
+check_shadowing() {
+    local link="$1"
+    local name
+    local found
+
+    name=$(basename "$link")
+    found=$(command -v "$name" 2>/dev/null)
+
+    if [[ -n "$found" && "$found" != "$link" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
 log() {
     local type="$1"
     local msg="$2"
@@ -86,6 +101,12 @@ while IFS= read -r -d '' script; do
     if ! check_shebang "$script"; then
         log "WARNING" "Skipping: $name missing or not using interpreter"
         ((skipped++)) || :
+        continue
+    fi
+
+    if check_shadowing "$link"; then
+        log "WARNING" "Conflict: $name shadows existing command"
+        ((conflicts++)) || :
         continue
     fi
 
