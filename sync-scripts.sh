@@ -7,10 +7,40 @@ set -euo pipefail
 SRC_DIR=${1:-}
 DEST_DIR="$HOME/.local/bin"
 
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+RESET="\e[0m"
+
 check_shebang() {
     local file="$1"
     [[ ! -f "$file" ]] && return 1
     [[ "$(head -n 1 "$file" 2>/dev/null)" =~ ^#! ]]
+}
+
+log() {
+    local type="$1"
+    local msg="$2"
+    local color
+    local reset="$RESET"
+
+    case "$type" in
+        "INFO")
+            color="$GREEN"
+            ;;
+        "WARNING")
+            color="$YELLOW"
+            ;;
+        "ERROR")
+            color="$RED"
+            ;;
+        *)
+            color=""
+            reset=""
+        ;;
+    esac
+
+    printf "${color}[%s]${reset} %s\n" "$type" "$msg"
 }
 
 if [[ -z "$SRC_DIR" ]]; then
@@ -21,16 +51,16 @@ fi
 SRC_DIR=$(realpath -m "$SRC_DIR")
 
 if [[ ! -d "$SRC_DIR" ]]; then
-    echo "Error: Source directory $SRC_DIR doesn't exist" >&2
+    log "ERROR" "Source directory $SRC_DIR doesn't exist"
     exit 1
 fi
 
-echo "Source: $SRC_DIR"
-echo "Destination: $DEST_DIR"
+log "INFO" "Source: $SRC_DIR"
+log "INFO" "Destination: $DEST_DIR"
 
 mkdir -p "$DEST_DIR"
 
-echo "Clean up broken symbolic links from $DEST_DIR ..."
+log "INFO" "Clean up broken symbolic links from $DEST_DIR ..."
 
 find "$DEST_DIR" -type l -xtype l -delete
 
@@ -39,7 +69,7 @@ created=0
 skipped=0
 conflicts=0
 
-echo "Syncing scripts from $SRC_DIR ..."
+log "INFO" "Syncing scripts from $SRC_DIR"
 
 while IFS= read -r -d '' script; do
     ((total++)) || :
@@ -48,13 +78,13 @@ while IFS= read -r -d '' script; do
     link="$DEST_DIR/${name%.sh}"
 
     if [[ ! -x "$script" ]]; then
-        echo "Skipping: $name is not executable" >&2
+        log "WARNING" "Skipping: $name is not executable"
         ((skipped++)) || :
         continue
     fi
 
     if ! check_shebang "$script"; then
-        echo "Skipping: $name missing or not using interpreter" >&2
+        log "WARNING" "Skipping: $name missing or not using interpreter"
         ((skipped++)) || :
         continue
     fi
@@ -64,30 +94,30 @@ while IFS= read -r -d '' script; do
         exit_code=$?
 
         if [[ $exit_code -ne 0 ]] || [[ -z "$target_path" ]]; then
-            echo "Warning: $link is a broken symlink or trapped in a loop" >&2
+            log "WARNING" "Conflict: $link is a broken symlink or trapped in a loop"
             ((conflicts++)) || :
             continue
         fi
 
         if [[ "$target_path" == "$script" ]]; then
-            echo "Skipping: $link already exists and points to $script" >&2
+            log "WARNING" "Skipping: $link already exists and points to $script"
             ((skipped++)) || :
             continue
         else
-            echo "Conflict: $link already exists and points elsewhere ($target_path)" >&2
+            log "WARNING" "Conflict: $link already exists and points elsewhere ($target_path)"
             ((conflicts++)) || :
             continue
         fi
     fi
 
     if ln -s "$script" "$link" 2>/dev/null; then
-        echo "Created: $link -> $script"
+        log "INFO" "Creating: $link -> $script"
         ((created++)) || :
     else
-        echo "Error: Failed to create link $name" >&2
+        log "ERROR" "Conflict: Failed to create link $name"
         ((conflicts++)) || :
     fi
 
 done < <(find "$SRC_DIR" -type f -not -path "*/.*" \( -executable -o \( -name "*.sh" -a -readable \) \) -print0)
 
-echo "Summary: Total $total | Created $created | Skipped $skipped | Conflicts $conflicts"
+log "INFO" "Total $total | Created $created | Skipped $skipped | Conflicts $conflicts"
