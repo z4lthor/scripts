@@ -37,25 +37,25 @@ log() {
     local type="$1"
     local msg="$2"
     local color
-    local reset="$RESET"
+    local fd=1
 
     case "$type" in
         "INFO")
             color="$GREEN"
             ;;
-        "WARNING")
+        "WARNING")  
             color="$YELLOW"
             ;;
         "ERROR")
             color="$RED"
+            fd=2
             ;;
         *)
             color=""
-            reset=""
-        ;;
+            ;;
     esac
 
-    printf "${color}[%s]${reset} %s\n" "$type" "$msg"
+    printf "${color}[%s]${RESET} %s\n" "$type" "$msg" >&$fd
 }
 
 if [[ -z "$SRC_DIR" ]]; then
