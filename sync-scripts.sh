@@ -33,6 +33,18 @@ check_shadowing() {
     return 1
 }
 
+cleanup_broken_links() {
+    local dir="$1"
+
+    find "$dir" -type l -xtype l -delete
+}
+
+find_scripts() {
+    local dir="$1"
+
+    find "$dir" -type f -not -path "*/.*" \( -executable -o \( -name "*.sh" -a -readable \) \) -print0
+}
+
 log() {
     local type="$1"
     local msg="$2"
@@ -77,7 +89,7 @@ error() {
 }
 
 if [[ -z "$SRC_DIR" ]]; then
-    echo "Usage: $(basename "$0") SOURCE"
+    echo "Usage: ${0##*/} SOURCE"
     exit 1
 fi
 
@@ -95,7 +107,7 @@ mkdir -p "$DEST_DIR"
 
 info "Clean up broken symbolic links from $DEST_DIR ..."
 
-find "$DEST_DIR" -type l -xtype l -delete
+cleanup_broken_links "$DEST_DIR"
 
 total=0
 created=0
@@ -128,7 +140,7 @@ while IFS= read -r -d '' script; do
         continue
     fi
 
-    if [[ -L "$link" ]] || [[ -e "$link" ]]; then
+    if [[ -e "$link" || -L "$link" ]]; then
         target_path=$(readlink -f "$link" 2>/dev/null)
         exit_code=$?
 
@@ -157,6 +169,6 @@ while IFS= read -r -d '' script; do
         ((conflicts++)) || :
     fi
 
-done < <(find "$SRC_DIR" -type f -not -path "*/.*" \( -executable -o \( -name "*.sh" -a -readable \) \) -print0)
+done < <(find_scripts "$SRC_DIR")
 
 info "Total $total | Created $created | Skipped $skipped | Conflicts $conflicts"
