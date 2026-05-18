@@ -23,18 +23,19 @@ print_msg() {
     echo -e "Host ${BLUE}$msg${RESET} is $RES"
 }
 
-HOST="$1"
+HOSTS=("$@")
 
-if [[ $# -ne 1 ]]; then
-    echo "Usage: $(basename "$0") HOST"
+if [[ $# -eq 0 ]]; then
+    echo "Usage: $(basename "$0") HOST..."
     exit 1
 fi
 
-if ping -c1 -W1 "$HOST" > /dev/null 2>&1; then
-    print_msg $HOST "ONLINE"
-else
-    print_msg $HOST "DOWN"
-    exit 1
-fi
+for host in "${HOSTS[@]}"; do
+    if ping -c1 -W1 "$host" > /dev/null 2>&1; then
+        print_msg $host "ONLINE"
+    else
+        print_msg $host "DOWN"
+    fi
+done
 
 exit 0
