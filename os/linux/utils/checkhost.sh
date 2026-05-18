@@ -23,6 +23,12 @@ print_msg() {
     echo -e "Host ${BLUE}$msg${RESET} is $RES"
 }
 
+ping_host() {
+    local host="$1"
+
+    ping -c1 -W1 "$host" > /dev/null 2>&1
+}
+
 HOSTS=("$@")
 
 if [[ $# -eq 0 ]]; then
@@ -31,7 +37,7 @@ if [[ $# -eq 0 ]]; then
 fi
 
 for host in "${HOSTS[@]}"; do
-    if ping -c1 -W1 "$host" > /dev/null 2>&1; then
+    if ping_host "$host"; then
         print_msg $host "ONLINE"
     else
         print_msg $host "DOWN"
