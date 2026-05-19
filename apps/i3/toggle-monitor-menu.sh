@@ -4,8 +4,6 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
-OUTPUT="HDMI-0"
-
 check_command() {
     local bin="$1"
 
@@ -21,6 +19,13 @@ confirm() {
     echo -e "󰄬 Yes\n󰏐 No" | rofi -dmenu -i -p "Confirm $1?" \
         -theme-str 'window {width: 25%;} listview {lines: 2;}'
 }
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage: ${0##*/} OUTPUT"
+    exit 1
+fi
+
+OUTPUT="$1"
 
 ! check_command toggle-monitor && exit 1
 
