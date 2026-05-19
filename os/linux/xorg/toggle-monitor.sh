@@ -6,7 +6,7 @@
 
 is_connected() {
     local output=$1
-    xrandr --query | grep "connected" | grep -q "^$output"
+    xrandr --query | grep -q "^$output connected"
 }
 
 is_active() {
