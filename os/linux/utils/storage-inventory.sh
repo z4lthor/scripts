@@ -46,6 +46,20 @@ get_device_size() {
     echo "$device_size"
 }
 
+save_metadata() {
+    local mp="$1"
+    local output="$2"
+
+    find "$mp" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$output"
+}
+
+save_hashes() {
+    local mp="$1"
+    local output="$2"
+
+    find "$mp" -xdev -type f -print0 | xargs -0 sha256sum > "output"
+}
+
 if [[ $EUID -ne 0 ]]; then
     echo "Error: Must be root" >&2
     exit 1
@@ -85,17 +99,16 @@ echo "File Hashes: $OUTPUT_HASHES"
 
 echo -n "Metadata file... "
 
-if find "$MOUNTPOINT" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$OUTPUT_META"; then
+if save_metadata "$MOUNTPOINT" "$OUTPUT_META"; then
     echo "OK"
 else
     echo "Failed"
     exit 1
 fi
 
-
 echo -n "Hashes file... "
 
-if find "$MOUNTPOINT" -xdev -type f -print0 | xargs -0 sha256sum > "$OUTPUT_HASHES"; then
+if save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
     echo "OK"
 else
     echo "Failed"
