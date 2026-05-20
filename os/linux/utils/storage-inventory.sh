@@ -57,7 +57,7 @@ save_hashes() {
     local mp="$1"
     local output="$2"
 
-    find "$mp" -xdev -type f -print0 | xargs -0 sha256sum > "$output"
+    find "$mp" -xdev -type f -print0 | xargs -0 -P "$(nproc)" -n 100 sha256sum > "$output"
 }
 
 if [[ $EUID -ne 0 ]]; then
