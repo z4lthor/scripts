@@ -65,24 +65,42 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ "$#" -ne 1 ]]; then
-    echo "Usage: $(basename "$0") DEVICE" >&2
+if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
+    echo "Usage: $(basename "$0") DEVICE [OUTPUT]" >&2
     exit 1
 fi
 
 DEVICE="$1"
-PHYSICAL_DEVICE=$(get_physical_device "$DEVICE")
-DEVICE_MODEL=$(get_device_model "$PHYSICAL_DEVICE")
-DEVICE_SIZE=$(get_device_size "$PHYSICAL_DEVICE")
-DATE=$(date +%Y-%m-%d-%H-%M-%S)
-OUTPUT_META=$(printf "%s_%s_%s_meta.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")
-OUTPUT_HASHES=$(printf "%s_%s_%s_hashes.txt" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE")
+OUTPUT="$2"
 
 if [[ ! -b "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found" >&2
     exit 1
 fi
 
+PHYSICAL_DEVICE=$(get_physical_device "$DEVICE")
+DEVICE_MODEL=$(get_device_model "$PHYSICAL_DEVICE")
+DEVICE_SIZE=$(get_device_size "$PHYSICAL_DEVICE")
+DATE=$(date +%Y-%m-%d-%H-%M-%S)
+
+if [[ -z "$OUTPUT" ]]; then
+    OUTPUT="$(printf "%s_%s_%s" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE").tar.gz"
+fi
+
+if [[ -f "$OUTPUT" ]]; then
+    echo "Error: File $OUTPUT already exists" >&2
+    exit 1
+fi
+
+if ! TMP_DIR=$(mktemp -d /tmp/storage_inventory_XXXXXX); then
+    echo "Error: Could not create temporary directory." >&2
+    exit 1
+fi
+
+trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+
+OUTPUT_META="$TMP_DIR/meta.txt"
+OUTPUT_HASHES="$TMP_DIR/hashes.txt"
 MOUNTPOINT=$(findmnt -no TARGET "$DEVICE")
 
 if [[ -z "$MOUNTPOINT" ]] || ! mountpoint -q "$MOUNTPOINT"; then
@@ -97,22 +115,33 @@ echo "Size:   $DEVICE_SIZE"
 echo "File Metadata: $OUTPUT_META"
 echo "File Hashes: $OUTPUT_HASHES"
 
-echo -n "Metadata file... "
+echo -n "Creating metadata file... "
 
-if save_metadata "$MOUNTPOINT" "$OUTPUT_META"; then
-    echo "OK"
-else
-    echo "Failed"
+if ! save_metadata "$MOUNTPOINT" "$OUTPUT_META"; then
+    echo "Error: Failed to create the metadata file." >&2
     exit 1
 fi
 
-echo -n "Hashes file... "
+echo "OK"
 
-if save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
-    echo "OK"
-else
-    echo "Failed"
+echo -n "Creating hashes file... "
+
+if ! save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
+    echo "Error: Failed to create the hashes file." >&2
     exit 1
 fi
+
+echo "OK"
+
+echo -n "Creating compressed file..."
+
+if ! tar -czf "$OUTPUT" -C "$TMP_DIR" .; then
+    echo "Error: Failed to create the compressed inventory file." >&2
+    exit 1
+fi
+
+echo "OK"
+
+echo "Created inventory file $OUTPUT"
 
 exit 0
