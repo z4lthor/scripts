@@ -46,6 +46,34 @@ get_device_size() {
     echo "$device_size"
 }
 
+save_filesystem() {
+    local mp="$1"
+    local output="$2"
+
+    local device physical model device_size
+    local type inodes size used avail
+
+    device=$(findmnt -no SOURCE "$mp")
+    physical=$(get_physical_device "$device")
+    model=$(get_device_model "$physical")
+    device_size=$(get_device_size "$physical")
+
+    type=$(findmnt -no FSTYPE "$mp" 2>/dev/null)
+    inodes=$(df "$mp" --output=iused 2>/dev/null | tail -n1)
+    size=$(df -h "$mp" --output=size 2>/dev/null | tail -n1)
+    used=$(df -h "$mp" --output=used 2>/dev/null | tail -n1)
+    avail=$(df -h "$mp" --output=avail 2>/dev/null | tail -n1)
+
+    {
+        echo "Disk: $model $device_size"
+        echo "Type: $type"
+        echo "Inodes: $inodes"
+        echo "Size: $size"
+        echo "Used: $used"
+        echo "Avail: $avail"
+    } > "$output"
+}
+
 save_metadata() {
     local mp="$1"
     local output="$2"
@@ -103,6 +131,7 @@ echo "OK"
 
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
+OUTPUT_FS="$TMP_DIR/fs.txt"
 OUTPUT_META="$TMP_DIR/meta.txt"
 OUTPUT_HASHES="$TMP_DIR/hashes.txt"
 MOUNTPOINT=$(findmnt -no TARGET "$DEVICE")
@@ -116,8 +145,18 @@ echo "Details"
 echo "Device: $PHYSICAL_DEVICE"
 echo "Model:  $DEVICE_MODEL"
 echo "Size:   $DEVICE_SIZE"
+echo "File filesystem: $OUTPUT_FS"
 echo "File Metadata: $OUTPUT_META"
 echo "File Hashes: $OUTPUT_HASHES"
+
+echo -n "Create filesystem file..."
+
+if ! save_filesystem "$MOUNTPOINT" "$OUTPUT_FS"; then
+    echo "Error: Failed to create the filesystem file." >&2
+    exit 1
+fi
+
+echo "OK"
 
 echo -n "Creating metadata file... "
 
