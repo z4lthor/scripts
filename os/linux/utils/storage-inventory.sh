@@ -92,10 +92,14 @@ if [[ -f "$OUTPUT" ]]; then
     exit 1
 fi
 
+echo -n "Creating temporary directory... "
+
 if ! TMP_DIR=$(mktemp -d /tmp/storage_inventory_XXXXXX); then
     echo "Error: Could not create temporary directory." >&2
     exit 1
 fi
+
+echo "OK"
 
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
