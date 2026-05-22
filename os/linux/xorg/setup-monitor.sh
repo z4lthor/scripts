@@ -22,12 +22,12 @@ case "$MODE" in
         xset s "$SCREENSAVER_DELAY_SEC"
         xset s noblank
         ;;
-    always-on)
+    always-on|presentation)
         xset -dpms
         xset s off
         ;;
     *)
-        echo "Error: Invalid mode. Modes=[normal|always-on]" >&2
+        echo "Error: Invalid mode. Modes=[normal|always-on|presentation]" >&2
         exit 1
         ;;
 esac
