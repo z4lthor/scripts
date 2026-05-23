@@ -23,11 +23,13 @@ MODE=${1-normal}
 
 case "$MODE" in
     normal)
+        xset +dpms
         xset dpms $STANDBY $SUSPEND $OFF
         xset s "$SCREENSAVER_DELAY_SEC"
         xset s noblank
         ;;
     eco)
+        xset +dpms
         xset dpms $STANDBY_ECO $SUSPEND_ECO $OFF_ECO
         xset s "$SCREENSAVER_ECO_DELAY_SEC"
         xset s blank
