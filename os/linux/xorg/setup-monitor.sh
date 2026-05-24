@@ -26,8 +26,7 @@ case "$MODE" in
     eco)
         xset +dpms
         xset dpms $((STANDBY / 2)) $((SUSPEND / 2)) $((OFF / 2))
-        xset s $((SCREENSAVER_DELAY_SEC / 2))
-        xset s blank
+        xset s off
         ;;
     always-on|presentation)
         xset -dpms
