@@ -9,12 +9,29 @@ SUSPEND=800
 OFF=1000
 SCREENSAVER_DELAY_SEC=300
 
+help() {
+cat <<EOF
+Usage: ${0##*/} [MODE]
+
+Modes:
+    normal          DPMS and screensaver are enabled. (By default)
+                    Delays: screensaver=300s, standby=600s, suspend=800s, off=1000s
+
+    eco             DPMS enabled, screensaver disabled. 
+                    Delays times set to 50% of normal mode.
+
+    always-on       DPMS and screensaver are disabled.
+
+    presentation    Alias for always-on mode.
+EOF
+}
+
 if [[ $# -gt 1 ]]; then
-    echo "Usage: ${0##*/} [MODE]"
+    help
     exit 1
 fi
 
-MODE=${1-normal}
+MODE=${1:-normal}
 
 case "$MODE" in
     normal)
@@ -33,7 +50,7 @@ case "$MODE" in
         xset s off
         ;;
     *)
-        echo "Error: Invalid mode. Modes=[normal|eco|always-on|presentation]" >&2
+        help
         exit 1
         ;;
 esac
