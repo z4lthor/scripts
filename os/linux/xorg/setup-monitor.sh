@@ -9,11 +9,6 @@ SUSPEND=800
 OFF=1000
 SCREENSAVER_DELAY_SEC=300
 
-STANDBY_ECO=$((STANDBY / 2))
-SUSPEND_ECO=$((SUSPEND / 2))
-OFF_ECO=$((OFF / 2))
-SCREENSAVER_ECO_DELAY_SEC=$((SCREENSAVER_DELAY_SEC / 2))
-
 if [[ $# -gt 1 ]]; then
     echo "Usage: ${0##*/} [MODE]"
     exit 1
@@ -30,8 +25,8 @@ case "$MODE" in
         ;;
     eco)
         xset +dpms
-        xset dpms $STANDBY_ECO $SUSPEND_ECO $OFF_ECO
-        xset s "$SCREENSAVER_ECO_DELAY_SEC"
+        xset dpms $((STANDBY / 2)) $((SUSPEND / 2)) $((OFF / 2))
+        xset s $((SCREENSAVER_DELAY_SEC / 2))
         xset s blank
         ;;
     always-on|presentation)
