@@ -23,6 +23,8 @@ Modes:
     always-on       DPMS and screensaver are disabled.
 
     presentation    Alias for always-on mode.
+
+    lock            Lock screen immediately
 EOF
 }
 
@@ -48,6 +50,9 @@ case "$MODE" in
     always-on|presentation)
         xset -dpms
         xset s off
+        ;;
+    lock)
+        xset s activate
         ;;
     *)
         help
