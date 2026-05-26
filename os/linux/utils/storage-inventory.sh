@@ -50,9 +50,11 @@ save_filesystem() {
     local mp="$1"
     local output="$2"
 
+    local timestamp
     local device physical model device_size
     local type inodes size used avail
 
+    timestamp=$(date +%Y-%m-%dT%H:%M:%S%z)
     device=$(findmnt -no SOURCE "$mp")
     physical=$(get_physical_device "$device")
     model=$(get_device_model "$physical")
@@ -65,6 +67,7 @@ save_filesystem() {
     avail=$(df -h "$mp" --output=avail 2>/dev/null | tail -n1 | xargs)
 
     {
+        echo "Timestamp: $timestamp"
         echo "Disk: $model $device_size"
         echo "Type: $type"
         echo "Inodes: $inodes"
