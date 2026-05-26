@@ -59,10 +59,10 @@ save_filesystem() {
     device_size=$(get_device_size "$physical")
 
     type=$(findmnt -no FSTYPE "$mp" 2>/dev/null)
-    inodes=$(df "$mp" --output=iused 2>/dev/null | tail -n1)
-    size=$(df -h "$mp" --output=size 2>/dev/null | tail -n1)
-    used=$(df -h "$mp" --output=used 2>/dev/null | tail -n1)
-    avail=$(df -h "$mp" --output=avail 2>/dev/null | tail -n1)
+    inodes=$(df "$mp" --output=iused 2>/dev/null | tail -n1 | xargs)
+    size=$(df -h "$mp" --output=size 2>/dev/null | tail -n1 | xargs)
+    used=$(df -h "$mp" --output=used 2>/dev/null | tail -n1 | xargs)
+    avail=$(df -h "$mp" --output=avail 2>/dev/null | tail -n1 | xargs)
 
     {
         echo "Disk: $model $device_size"
