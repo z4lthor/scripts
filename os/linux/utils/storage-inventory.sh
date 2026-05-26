@@ -51,13 +51,14 @@ save_filesystem() {
     local output="$2"
 
     local timestamp
-    local device physical model device_size
+    local device physical model uuid device_size
     local type inodes size used avail
 
     timestamp=$(date +%Y-%m-%dT%H:%M:%S%z)
     device=$(findmnt -no SOURCE "$mp")
     physical=$(get_physical_device "$device")
     model=$(get_device_model "$physical")
+    uuid=$(findmnt -no UUID "$mp" 2>/dev/null)
     device_size=$(get_device_size "$physical")
 
     type=$(findmnt -no FSTYPE "$mp" 2>/dev/null)
@@ -69,6 +70,7 @@ save_filesystem() {
     {
         echo "Timestamp: $timestamp"
         echo "Disk: $model $device_size"
+        echo "UUID: $uuid"
         echo "Type: $type"
         echo "Inodes: $inodes"
         echo "Size: $size"
