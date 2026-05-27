@@ -125,7 +125,19 @@ if [[ -f "$OUTPUT" ]]; then
     exit 1
 fi
 
-echo -n "Creating temporary directory... "
+MOUNTPOINT=$(findmnt -no TARGET "$DEVICE")
+
+if [[ -z "$MOUNTPOINT" ]] || ! mountpoint -q "$MOUNTPOINT"; then
+    echo "Error: Device $DEVICE not mounted" >&2
+    exit 1
+fi
+
+echo "Device: $PHYSICAL_DEVICE"
+echo "Model: $DEVICE_MODEL $DEVICE_SIZE"
+echo "Mount point: $MOUNTPOINT"
+echo
+
+echo -n "Creating temporary directory ... "
 
 if ! TMP_DIR=$(mktemp -d /tmp/storage_inventory_XXXXXX); then
     echo "Error: Could not create temporary directory." >&2
@@ -139,22 +151,8 @@ trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 OUTPUT_FS="$TMP_DIR/fs.txt"
 OUTPUT_META="$TMP_DIR/meta.txt"
 OUTPUT_HASHES="$TMP_DIR/hashes.txt"
-MOUNTPOINT=$(findmnt -no TARGET "$DEVICE")
 
-if [[ -z "$MOUNTPOINT" ]] || ! mountpoint -q "$MOUNTPOINT"; then
-    echo "Error: Device $DEVICE not mounted" >&2
-    exit 1
-fi
-
-echo "Details"
-echo "Device: $PHYSICAL_DEVICE"
-echo "Model:  $DEVICE_MODEL"
-echo "Size:   $DEVICE_SIZE"
-echo "File filesystem: $OUTPUT_FS"
-echo "File Metadata: $OUTPUT_META"
-echo "File Hashes: $OUTPUT_HASHES"
-
-echo -n "Create filesystem file..."
+echo -n "Create filesystem file ... "
 
 if ! save_filesystem "$MOUNTPOINT" "$OUTPUT_FS"; then
     echo "Error: Failed to create the filesystem file." >&2
@@ -163,7 +161,7 @@ fi
 
 echo "OK"
 
-echo -n "Creating metadata file... "
+echo -n "Creating metadata file ... "
 
 if ! save_metadata "$MOUNTPOINT" "$OUTPUT_META"; then
     echo "Error: Failed to create the metadata file." >&2
@@ -172,7 +170,7 @@ fi
 
 echo "OK"
 
-echo -n "Creating hashes file... "
+echo -n "Creating hashes file ... "
 
 if ! save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
     echo "Error: Failed to create the hashes file." >&2
@@ -181,7 +179,7 @@ fi
 
 echo "OK"
 
-echo -n "Creating compressed file..."
+echo -n "Creating compressed file ..."
 
 if ! tar -czf "$OUTPUT" -C "$TMP_DIR" .; then
     echo "Error: Failed to create the compressed inventory file." >&2
