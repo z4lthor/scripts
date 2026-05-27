@@ -49,8 +49,16 @@ get_device_size() {
 get_output_filename() {
     local model="$1"
     local size="$2"
+    local clean_model
+    local timestamp
 
-    printf "%s_%s_%s.tar.gz" "$model" "$size" "$(date +%Y-%m-%d-%H-%M-%S)"
+    [[ -z "$model" || -z "$size" ]] && return 1
+
+    clean_model="${model//[^a-zA-Z0-9._-]/_}"
+    clean_model=$(tr -s '_' <<< "$clean_model")
+    timestamp=$(date +%Y%m%d_%H%M%S)
+
+    printf "%s_%s_%s.tar.gz\n" "$clean_model" "$size" "$timestamp"
 }
 
 save_filesystem() {
