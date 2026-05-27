@@ -68,14 +68,14 @@ save_filesystem() {
     avail=$(df -h "$mp" --output=avail 2>/dev/null | tail -n1 | xargs)
 
     {
-        echo "Timestamp: $timestamp"
-        echo "Disk: $model $device_size"
-        echo "UUID: $uuid"
-        echo "Type: $type"
-        echo "Inodes: $inodes"
-        echo "Size: $size"
-        echo "Used: $used"
-        echo "Avail: $avail"
+        echo "Timestamp:    $timestamp"
+        echo "Disk:         $model $device_size"
+        echo "UUID:         $uuid"
+        echo "Type:         $type"
+        echo "Inodes:       $inodes"
+        echo "Size:         $size"
+        echo "Used:         $used"
+        echo "Avail:        $avail"
     } > "$output"
 }
 
