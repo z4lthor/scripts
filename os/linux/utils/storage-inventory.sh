@@ -46,6 +46,13 @@ get_device_size() {
     echo "$device_size"
 }
 
+get_output_filename() {
+    local model="$1"
+    local size="$2"
+
+    printf "%s_%s_%s.tar.gz" "$model" "$size" "$(date +%Y-%m-%d-%H-%M-%S)"
+}
+
 save_filesystem() {
     local mp="$1"
     local output="$2"
@@ -70,7 +77,7 @@ save_filesystem() {
     {
         echo "Timestamp:    $timestamp"
         echo "Disk:         $model $device_size"
-        echo "UUID:         $uuid"
+        echo "UUID:         ${uuid:-N/A}"
         echo "Type:         $type"
         echo "Inodes:       $inodes"
         echo "Size:         $size"
@@ -114,10 +121,9 @@ fi
 PHYSICAL_DEVICE=$(get_physical_device "$DEVICE")
 DEVICE_MODEL=$(get_device_model "$PHYSICAL_DEVICE")
 DEVICE_SIZE=$(get_device_size "$PHYSICAL_DEVICE")
-DATE=$(date +%Y-%m-%d-%H-%M-%S)
 
 if [[ -z "$OUTPUT" ]]; then
-    OUTPUT="$(printf "%s_%s_%s" "$DEVICE_MODEL" "$DEVICE_SIZE" "$DATE").tar.gz"
+    OUTPUT=$(get_output_filename "$DEVICE_MODEL" "$DEVICE_SIZE")
 fi
 
 if [[ -f "$OUTPUT" ]]; then
