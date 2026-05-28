@@ -126,6 +126,17 @@ save_hashes() {
     find "$mp" -xdev -type f -print0 | xargs -0 -P "$(nproc)" -n 100 sha256sum > "$output"
 }
 
+create_output() {
+    local dir="$1"
+    local output="$2"
+
+    [[ ! -d "$dir" ]] && return 1
+
+    [[ -z "$output" ]] && return 1
+
+    tar -czf "$output" -C "$dir" .
+}
+
 if [[ $EUID -ne 0 ]]; then
     echo "Error: Must be root" >&2
     exit 1
@@ -213,7 +224,7 @@ echo "OK"
 
 echo -n "Creating compressed file ..."
 
-if ! tar -czf "$OUTPUT" -C "$TMP_DIR" .; then
+if ! create_output "$TMP_DIR" "$OUTPUT"; then
     echo "Error: Failed to create the compressed inventory file." >&2
     exit 1
 fi
