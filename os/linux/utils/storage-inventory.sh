@@ -65,6 +65,12 @@ save_filesystem() {
     local mp="$1"
     local output="$2"
 
+    if [[ -z "$mp" ]] || ! mountpoint -q "$mp"; then
+        return 1
+    fi
+
+    [[ -z "$output" ]] && return 1
+
     local timestamp
     local device physical model uuid device_size
     local type inodes size used avail
@@ -98,12 +104,24 @@ save_metadata() {
     local mp="$1"
     local output="$2"
 
+    if [[ -z "$mp" ]] || ! mountpoint -q "$mp"; then
+        return 1
+    fi
+
+    [[ -z "$output" ]] && return 1
+
     find "$mp" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$output"
 }
 
 save_hashes() {
     local mp="$1"
     local output="$2"
+
+    if [[ -z "$mp" ]] || ! mountpoint -q "$mp"; then
+        return 1
+    fi
+
+    [[ -z "$output" ]] && return 1
 
     find "$mp" -xdev -type f -print0 | xargs -0 -P "$(nproc)" -n 100 sha256sum > "$output"
 }
