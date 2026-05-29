@@ -4,11 +4,14 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
+SKIP_HASHES=false
+
 help() {
 cat <<EOF
 Usage: ${0##*/} [options] DEVICE [OUTPUT]
 
 Options:
+-s, --skip-hashes       Skip hashes file creation
 -h, --help              Show this help
 EOF
 }
@@ -151,8 +154,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-OPTS=$(getopt -o h \
-    --long help \
+OPTS=$(getopt -o sh \
+    --long skip-hashes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -164,6 +167,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -s|--skip-hashes)
+            SKIP_HASHES=true
+            shift
+            ;;
         -h|--help)
             help
             exit 0
@@ -250,14 +257,16 @@ fi
 
 echo "OK"
 
-echo -n "Creating hashes file ... "
+if [[ "$SKIP_HASHES" = "false" ]]; then
+    echo -n "Creating hashes file ... "
 
-if ! save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
-    echo "Error: Failed to create the hashes file." >&2
-    exit 1
+    if ! save_hashes "$MOUNTPOINT" "$OUTPUT_HASHES"; then
+        echo "Error: Failed to create the hashes file." >&2
+        exit 1
+    fi
+
+    echo "OK"
 fi
-
-echo "OK"
 
 echo -n "Creating compressed file ..."
 
