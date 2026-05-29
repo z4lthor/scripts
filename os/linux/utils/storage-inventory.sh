@@ -4,6 +4,15 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
+help() {
+cat <<EOF
+Usage: ${0##*/} [options] DEVICE [OUTPUT]
+
+Options:
+-h, --help              Show this help
+EOF
+}
+
 get_physical_device() {
     local dev="$1"
     local node_name
@@ -142,8 +151,36 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+OPTS=$(getopt -o h \
+    --long help \
+    -n "$0" -- "$@")
+
+if [[ $? -ne 0 ]]; then
+    help
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -h|--help)
+            help
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            error "Internal getopt error"
+            exit 1
+            ;;
+    esac
+done
+
 if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
-    echo "Usage: $(basename "$0") DEVICE [OUTPUT]" >&2
+    help
     exit 1
 fi
 
