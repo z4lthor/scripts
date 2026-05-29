@@ -52,6 +52,27 @@ confirm_action() {
     done
 }
 
+get_monitor_geometry() {
+    local monitor="$1"
+
+    xrandr --query | grep "^$monitor" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' '
+}
+
+get_window_geometry() {
+    local cmd="$1"
+
+    xdotool "$cmd" getwindowgeometry --shell | \
+    sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs
+}
+
+get_selected_window_geometry() {
+    get_window_geometry "selectwindow"
+}
+
+get_focused_window_geometry() {
+    get_window_geometry "getwindowfocus"
+}
+
 is_number() {
     local num=$1
 
@@ -127,18 +148,16 @@ if [[ -f "$OUTPUT" ]] && ! confirm_action "Do you want to overwrite the file $(b
 fi
 
 if [[ -n "$MONITOR" ]]; then
-    read -r W H X Y < <(xrandr --query | grep "^$MONITOR" | grep -oP '\d+x\d+\+\d+\+\d+' | tr 'x+' ' ')
+    read -r W H X Y < <(get_monitor_geometry "$MONITOR")
 
     if [[ -z "$W" ]]; then
         echo "Error: Not found monitor $MONITOR" >&2
         exit 1
     fi
 elif [[ "$WINDOW" = "true" ]]; then
-    read -r X Y W H < <(xdotool selectwindow getwindowgeometry --shell | \
-        sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
+    read -r X Y W H < <(get_selected_window_geometry)
 elif [[ "$FOCUS" = "true" ]]; then
-    read -r X Y W H < <(xdotool getwindowfocus getwindowgeometry --shell | \
-        sed -n 's/^X=\([0-9]*\).*/\1/p;s/^Y=\([0-9]*\).*/\1/p;s/^WIDTH=\([0-9]*\).*/\1/p;s/^HEIGHT=\([0-9]*\).*/\1/p' | xargs)
+    read -r X Y W H < <(get_focused_window_geometry)
 fi
 
 if [[ -n "$W" ]]; then
