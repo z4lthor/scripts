@@ -125,6 +125,23 @@ save_metadata() {
     find "$mp" -xdev -printf "%i|%y|%m|%u|%g|%s|%n|%D|%T@|%C@|%A@|%p|%l\0" > "$output"
 }
 
+calc_hash() {
+    local file="$1"
+    local size
+    size=$(stat -c%s "$file")
+
+    if (( size <= 8192 )); then
+        sha256sum "$file"
+    else
+        (
+            dd if="$file" bs=4096 count=1 2>/dev/null
+            dd if="$file" bs=1 skip=$(( size - 4096 )) count=4096 2>/dev/null
+        ) | sha256sum | FILE="$file" awk '{print $1 " " ENVIRON["FILE"]}'
+    fi
+}
+
+export -f calc_hash
+
 save_hashes() {
     local mp="$1"
     local output="$2"
@@ -135,7 +152,8 @@ save_hashes() {
 
     [[ -z "$output" ]] && return 1
 
-    find "$mp" -xdev -type f -print0 | xargs -0 -P "$(nproc)" -n 100 sha256sum > "$output"
+    find "$mp" -xdev -type f -print0 | \
+        xargs -0 -P "$(nproc)" -n 1 bash -c 'calc_hash "$@"' _ > "$output"
 }
 
 create_output() {
