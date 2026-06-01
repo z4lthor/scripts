@@ -128,14 +128,17 @@ save_metadata() {
 calc_hash() {
     local file="$1"
     local size
+    local chunk=4096
+
     size=$(stat -c%s "$file")
 
     if (( size <= 8192 )); then
         sha256sum "$file"
     else
+        local mid=$(( size / 2 ))
         (
-            dd if="$file" bs=4096 count=1 2>/dev/null
-            dd if="$file" bs=1 skip=$(( size - 4096 )) count=4096 2>/dev/null
+            dd if="$file" bs=1 skip="$mid"              count="$chunk" 2>/dev/null
+            dd if="$file" bs=1 skip=$(( size - chunk )) count="$chunk" 2>/dev/null
         ) | sha256sum | FILE="$file" awk '{print $1 " " ENVIRON["FILE"]}'
     fi
 }
