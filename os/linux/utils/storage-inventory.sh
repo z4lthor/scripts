@@ -128,11 +128,12 @@ save_metadata() {
 calc_hash() {
     local file="$1"
     local size
+    local threshold=$(( 1024 * 1024 ))
     local chunk=4096
 
     size=$(stat -c%s "$file")
 
-    if (( size <= 8192 )); then
+    if (( size <= threshold )); then
         sha256sum "$file"
     else
         local mid=$(( size / 2 ))
