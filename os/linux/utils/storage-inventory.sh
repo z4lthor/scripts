@@ -4,13 +4,19 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
+FAST=false
 SKIP_HASHES=false
+THRESHOLD=$(( 1024 * 1024 ))
 
 help() {
 cat <<EOF
 Usage: ${0##*/} [options] DEVICE [OUTPUT]
 
 Options:
+-f --fast               Compute a partial hash for files larger than 1 MB, reading
+                        4096 bytes from the middle and 4096 bytes from the end.
+                        Files smaller than 1 MB are always fully hashed.
+                        Faster than full hashing but may produce false positives.
 -s, --skip-hashes       Skip hashes file creation
 -h, --help              Show this help
 EOF
@@ -128,12 +134,11 @@ save_metadata() {
 calc_hash() {
     local file="$1"
     local size
-    local threshold=$(( 1024 * 1024 ))
     local chunk=4096
 
     size=$(stat -c%s "$file")
 
-    if (( size <= threshold )); then
+    if [[ "$FAST" = "false" ]] || (( size <= THRESHOLD )); then
         sha256sum "$file"
     else
         local mid=$(( size / 2 ))
@@ -176,8 +181,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-OPTS=$(getopt -o sh \
-    --long skip-hashes,help \
+OPTS=$(getopt -o fsh \
+    --long fast,skip-hashes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -189,6 +194,10 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
+        -f|--fast)
+            FAST=true
+            shift
+            ;;
         -s|--skip-hashes)
             SKIP_HASHES=true
             shift
