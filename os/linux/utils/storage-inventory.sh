@@ -17,6 +17,10 @@ Options:
                         4096 bytes from the middle and 4096 bytes from the end.
                         Files smaller than 1 MB are always fully hashed.
                         Faster than full hashing but may produce false positives.
+-t --threshold BYTES    File size threshold in bytes for partial hashing.
+                        Files larger than BYTES are hashed partially (middle
+                        and end chunks). Only valid combined with --fast.
+                        Default: 1048576 (1 MB).
 -s, --skip-hashes       Skip hashes file creation
 -h, --help              Show this help
 EOF
@@ -181,8 +185,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-OPTS=$(getopt -o fsh \
-    --long fast,skip-hashes,help \
+OPTS=$(getopt -o ft:sh \
+    --long fast,threshold:,skip-hashes,help \
     -n "$0" -- "$@")
 
 if [[ $? -ne 0 ]]; then
@@ -197,6 +201,10 @@ while true; do
         -f|--fast)
             FAST=true
             shift
+            ;;
+        -t|--threshold)
+            THRESHOLD="$2"
+            shift 2
             ;;
         -s|--skip-hashes)
             SKIP_HASHES=true
@@ -224,6 +232,10 @@ fi
 
 DEVICE="$1"
 OUTPUT="$2"
+
+echo "$THRESHOLD"
+
+exit 0
 
 if [[ ! -b "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found" >&2
