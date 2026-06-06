@@ -180,6 +180,12 @@ create_output() {
     tar -czf "$output" -C "$dir" .
 }
 
+is_number() {
+    local num=$1
+
+    [[ "$num" =~ ^[0-9]+$ ]]
+}
+
 if [[ $EUID -ne 0 ]]; then
     echo "Error: Must be root" >&2
     exit 1
@@ -233,9 +239,10 @@ fi
 DEVICE="$1"
 OUTPUT="$2"
 
-echo "$THRESHOLD"
-
-exit 0
+if ! is_number "$THRESHOLD"; then
+    help
+    exit 1
+fi
 
 if [[ ! -b "$DEVICE" ]]; then
     echo "Error: Device $DEVICE not found" >&2
