@@ -60,6 +60,11 @@ esac
 
 PRIMARY=$(get_primary)
 
+if ! is_connected "$PRIMARY"; then
+    echo "Error: Primary $PRIMARY not connected"
+    exit 1
+fi
+
 if is_active "$OUTPUT"; then
     echo "Turning off monitor on $OUTPUT"
     xrandr --output "$OUTPUT" --off
