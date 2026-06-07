@@ -14,6 +14,10 @@ is_active() {
     xrandr --query | grep "^$output" | grep -qE "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+"
 }
 
+get_primary() {
+    xrandr --query | awk '/ primary / { print $1 }'
+}
+
 if [[ $# -eq 0 ]]; then
     echo "Usage: $(basename "$0") OUTPUT [POSITION]"
     exit 1
@@ -54,7 +58,7 @@ case "$POSITION" in
     ;;
 esac
 
-PRIMARY=$(xrandr --query | awk '/ primary / { print $1 }')
+PRIMARY=$(get_primary)
 
 if is_active "$OUTPUT"; then
     echo "Turning off monitor on $OUTPUT"
