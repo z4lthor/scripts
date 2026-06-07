@@ -180,10 +180,9 @@ create_output() {
     tar -czf "$output" -C "$dir" .
 }
 
-is_number() {
+is_positive_integer() {
     local num=$1
-
-    [[ "$num" =~ ^[0-9]+$ ]]
+    [[ "$num" =~ ^[1-9][0-9]*$ ]]
 }
 
 if [[ $EUID -ne 0 ]]; then
@@ -239,7 +238,7 @@ fi
 DEVICE="$1"
 OUTPUT="$2"
 
-if ! is_number "$THRESHOLD"; then
+if ! is_positive_integer "$THRESHOLD"; then
     help
     exit 1
 fi
