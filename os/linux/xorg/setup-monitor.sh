@@ -4,39 +4,54 @@
 # Author: z4lthor <z4lthor@gmail.com>
 #
 
-STANDBY=600
-SUSPEND=800
-OFF=1000
-SCREENSAVER_DELAY_SEC=300
+DEF_STANDBY=600
+DEF_SUSPEND=800
+DEF_OFF=1000
+DEF_SCREENSAVER_DELAY_SEC=300
 
 help() {
 cat <<EOF
 Usage: ${0##*/} [MODE]
 
 Modes:
-    normal          DPMS and screensaver are enabled. (By default)
-                    Delays: screensaver=300s, standby=600s, suspend=800s, off=1000s
+    normal                                  DPMS and screensaver are enabled. (By default)
+                                            Delays: 
+                                                standby=${DEF_STANDBY}s
+                                                suspend=${DEF_SUSPEND}s
+                                                off=${DEF_OFF}s
+                                                screensaver=${DEF_SCREENSAVER_DELAY_SEC}s
 
-    eco             DPMS enabled, screensaver disabled. 
-                    Delays times set to 50% of normal mode.
+    eco                                     DPMS enabled, screensaver disabled. 
+                                            Delays times set to 50% of normal mode.
 
-    always-on       DPMS and screensaver are disabled.
+    always-on                               DPMS and screensaver are disabled.
 
-    presentation    Alias for always-on mode.
+    presentation                            Alias for always-on mode.
 
-    lock            Lock screen immediately
+    lock                                    Lock screen immediately
+
+    custom STANDBY SUSPEND OFF SCREENSAVER  Custom delays for DPMS and screensaver.
 EOF
 }
 
-if [[ $# -gt 1 ]]; then
+if [[ $# -gt 1 && $# -lt 5 ]]; then
     help
     exit 1
 fi
 
 MODE=${1:-normal}
+STANDBY=${2:-$DEF_STANDBY}
+SUSPEND=${3:-$DEF_SUSPEND}
+OFF=${4:-$DEF_OFF}
+SCREENSAVER_DELAY_SEC=${5:-$DEF_SCREENSAVER_DELAY_SEC}
+
+if [[ "$MODE" = "custom" && $# -ne 5 ]]; then
+    help
+    exit 1
+fi
 
 case "$MODE" in
-    normal)
+    normal|custom)
         xset +dpms
         xset dpms $STANDBY $SUSPEND $OFF
         xset s "$SCREENSAVER_DELAY_SEC"
