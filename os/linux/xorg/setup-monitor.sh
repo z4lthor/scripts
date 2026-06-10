@@ -34,7 +34,7 @@ Modes:
 EOF
 }
 
-if [[ $# -gt 1 && $# -lt 5 ]]; then
+if [[ $# -gt 1 && $# -lt 5 ]] || [[ $# -gt 5 ]]; then
     help
     exit 1
 fi
