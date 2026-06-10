@@ -34,10 +34,24 @@ Modes:
 EOF
 }
 
+is_positive_integer() {
+    local num=$1
+    [[ "$num" =~ ^[1-9][0-9]*$ ]]
+}
+
 if [[ $# -gt 1 && $# -lt 5 ]] || [[ $# -gt 5 ]]; then
     help
     exit 1
 fi
+
+DELAYS=("${@:2}")
+
+for delay in "${DELAYS[@]}"; do
+    if ! is_positive_integer "$delay"; then
+        help
+        exit 1
+    fi
+done
 
 MODE=${1:-normal}
 STANDBY=${2:-$DEF_STANDBY}
