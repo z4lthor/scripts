@@ -18,6 +18,11 @@ get_primary() {
     xrandr --query | awk '/ primary / { print $1 }'
 }
 
+if [[ -z "$DISPLAY" ]] || ! xset q >/dev/null 2>&1; then
+    echo "Error: X server is down or not available" >&2
+    exit 1
+fi
+
 if [[ $# -eq 0 ]]; then
     echo "Usage: $(basename "$0") OUTPUT [POSITION]"
     exit 1
