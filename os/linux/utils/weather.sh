@@ -14,4 +14,5 @@ fi
 jq -c '{
     temp: .current_condition[0].temp_C,
     desc: .current_condition[0].weatherDesc[0].value,
+    code: .current_condition[0].weatherCode
 }' <<< "$DATA"
