@@ -13,7 +13,7 @@ confirm() {
 
 SELECTION=$(echo -e "$OPTS" | rofi -dmenu -i -p "System:" \
     -hide-scrollbar \
-    -theme-str 'window {width: 15%;} listview {lines: 4;}' \
+    -theme-str 'window {width: 20%;} listview {lines: 5;}' \
     -padding 20)
 
 case "$SELECTION" in
