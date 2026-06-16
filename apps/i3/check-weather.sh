@@ -6,6 +6,11 @@
 
 DATA=$(fetch-weather)
 
+if [[ -z "$DATA" ]]; then
+    dunstify -u critical "Error" "Weather API not respond"
+    exit 1
+fi
+
 TEMP=$(jq -r '.temp' <<< "$DATA")
 DESC=$(jq -r '.desc' <<< "$DATA")
 CODE=$(jq -r '.code' <<< "$DATA")
